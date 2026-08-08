@@ -500,11 +500,13 @@ function App() {
     if (side === "home") {
       setHomeScoreAnim(animObj);
       setHomePulse(true);
-      setTimeout(() => setHomePulse(false), 360);
+      setTimeout(() => setHomePulse(false), 600);
+      setTimeout(() => setHomeScoreAnim(null), 1500);
     } else {
       setAwayScoreAnim(animObj);
       setAwayPulse(true);
-      setTimeout(() => setAwayPulse(false), 360);
+      setTimeout(() => setAwayPulse(false), 600);
+      setTimeout(() => setAwayScoreAnim(null), 1500);
     }
   }, []);
 
@@ -1626,7 +1628,7 @@ function App() {
 
   return (
     <>
-      <div className={`scoreboard-viewport anim-${visibilityPhase}`}>
+      <div className="scoreboard-viewport">
       {/* Header Bar */}
       <header className="arena-header">
         <div className="brand-section">
@@ -1664,20 +1666,6 @@ function App() {
         </div>
 
         <div className="header-actions">
-          {/* Show / Hide Broadcast Scoreboard Toggle */}
-          <button
-            className="icon-btn"
-            onClick={toggleScoreboardVisibility}
-            title="Broadcast Entrance / Exit (Hotkey: V)"
-            style={{
-              background: visibilityPhase === "hidden" || visibilityPhase === "exiting" ? "rgba(239, 68, 68, 0.25)" : "rgba(34, 197, 94, 0.2)",
-              borderColor: visibilityPhase === "hidden" || visibilityPhase === "exiting" ? "rgba(239, 68, 68, 0.5)" : "rgba(34, 197, 94, 0.5)",
-              color: "#ffffff"
-            }}
-          >
-            📺 {visibilityPhase === "hidden" || visibilityPhase === "exiting" ? "SHOW SCOREBOARD" : "HIDE SCOREBOARD"}
-          </button>
-
           <button className="icon-btn" onClick={() => setIsHistoryModalOpen(true)} title="Match History Archive">
             📂 History ({matchHistory.length})
           </button>
@@ -1831,9 +1819,6 @@ function App() {
 
         {/* Action / Reset */}
         <div className="quick-actions-bar">
-          <button className="btn-desk-action" onClick={toggleScoreboardVisibility} title="Show/Hide Scoreboard (Hotkey: V)">
-            📺 {visibilityPhase === "hidden" || visibilityPhase === "exiting" ? "Show Board" : "Hide Board"}
-          </button>
           <button className="btn-desk-action" onClick={() => setIsTimeModalOpen(true)}>
             Custom Time
           </button>
