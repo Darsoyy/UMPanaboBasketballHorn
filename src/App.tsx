@@ -7,10 +7,12 @@ const DEFAULT_TIMEOUTS = 5;
 const HOTKEY_STORAGE_KEY = "basketball-scoreboard-hotkeys-v5";
 const LIVE_STATE_STORAGE_KEY = "basketball-scoreboard-live-state-v1";
 const MATCH_HISTORY_STORAGE_KEY = "basketball-scoreboard-match-history-v1";
-const ACCESS_CODE_STORAGE_KEY = "basketball-scoreboard-access-code-v1";
-const AUTH_SESSION_STORAGE_KEY = "basketball-scoreboard-auth-session-v1";
+const LICENSE_STORAGE_KEY = "basketball-scoreboard-license-v2";
+const USED_CODES_STORAGE_KEY = "basketball-scoreboard-used-codes-v2";
 
-const DEFAULT_ACCESS_CODE = "1234";
+const THREE_DAYS_MS = 3 * 24 * 60 * 60 * 1000; // 3 days in milliseconds
+const ADMIN_MASTER_PASSWORD = "ADMIN2026KEYPASS";
+
 const RESERVED_HORN_HOTKEY = "Space";
 
 const ACTION_DEFINITIONS = [
@@ -86,6 +88,12 @@ type MatchRecord = {
   awayFouls: number;
   awayPlayers: Player[];
   quarter: number;
+};
+
+type LicenseRecord = {
+  code: string;
+  activatedAt: number;
+  expiresAt: number;
 };
 
 type LiveState = {
@@ -177,17 +185,92 @@ const formatClock = (totalSeconds: number) => {
     .padStart(2, "0")}`;
 };
 
-const isTypingTarget = (target: EventTarget | null) => {
-  if (!(target instanceof HTMLElement)) return false;
+const formatTimeRemaining = (ms: number): string => {
+  if (ms <= 0) return "EXPIRED";
+  const hours = Math.floor(ms / (1000 * 60 * 60));
+  const days = Math.floor(hours / 24);
+  const remainingHours = hours % 24;
+  const minutes = Math.floor((ms % (1000 * 60 * 60)) / (1000 * 60));
 
-  const tagName = target.tagName.toLowerCase();
+  if (days > 0) return `${days}d ${remainingHours}h remaining`;
+  return `${remainingHours}h ${minutes}m remaining`;
+};
 
-  return (
-    tagName === "input" ||
-    tagName === "textarea" ||
-    tagName === "select" ||
-    target.isContentEditable
-  );
+const formatCode16 = (raw: string): string => {
+  const clean = raw.replace(/[^A-Z0-9]/gi, "").toUpperCase().slice(0, 16);
+  const parts = clean.match(/.{1,4}/g) || [];
+  return parts.join("-");
+};
+
+const loadStoredLicense = (): LicenseRecord | null => {
+  if (typeof window === "undefined") return null;
+
+  try {
+    const saved = window.localStorage.getItem(LICENSE_STORAGE_KEY);
+    if (!saved) return null;
+    return JSON.parse(saved) as LicenseRecord;
+  } catch {
+    return null;
+  }
+};
+
+const loadStoredUsedCodes = (): string[] => {
+  if (typeof window === "undefined") return [];
+
+  try {
+    const saved = window.localStorage.getItem(USED_CODES_STORAGE_KEY);
+    if (!saved) return [];
+    return JSON.parse(saved) as string[];
+  } catch {
+    return [];
+  }
+};
+
+const loadStoredHotkeys = (): HotkeyMap => {
+  if (typeof window === "undefined") return DEFAULT_HOTKEYS;
+
+  try {
+    const saved = window.localStorage.getItem(HOTKEY_STORAGE_KEY);
+    if (!saved) return DEFAULT_HOTKEYS;
+    const parsed = JSON.parse(saved) as HotkeyMap;
+    return { ...DEFAULT_HOTKEYS, ...parsed };
+  } catch {
+    return DEFAULT_HOTKEYS;
+  }
+};
+
+const loadStoredLiveState = (): LiveState | null => {
+  if (typeof window === "undefined") return null;
+
+  try {
+    const saved = window.localStorage.getItem(LIVE_STATE_STORAGE_KEY);
+    if (!saved) return null;
+    return JSON.parse(saved) as LiveState;
+  } catch {
+    return null;
+  }
+};
+
+const loadStoredMatchHistory = (): MatchRecord[] => {
+  if (typeof window === "undefined") return [];
+
+  try {
+    const saved = window.localStorage.getItem(MATCH_HISTORY_STORAGE_KEY);
+    if (!saved) return [];
+    return JSON.parse(saved) as MatchRecord[];
+  } catch {
+    return [];
+  }
+};
+
+// Generate an official 16-character 3-day access key
+const generate16CharKey = (): string => {
+  const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+  let key = "";
+  for (let i = 0; i < 16; i++) {
+    key += chars.charAt(Math.floor(Math.random() * chars.length));
+  }
+  return formatCode16(key);
 };
 
 const codeToLabel = (code: string) => {
@@ -234,6 +317,19 @@ const comboToLabel = (combo?: string | null) => {
     .join("+");
 };
 
+const isTypingTarget = (target: EventTarget | null) => {
+  if (!(target instanceof HTMLElement)) return false;
+
+  const tagName = target.tagName.toLowerCase();
+
+  return (
+    tagName === "input" ||
+    tagName === "textarea" ||
+    tagName === "select" ||
+    target.isContentEditable
+  );
+};
+
 const readComboFromEvent = (event: KeyboardEvent): KeyCombo | null => {
   const modifierOnlyCodes = new Set([
     "ShiftLeft",
@@ -265,70 +361,21 @@ const readComboFromEvent = (event: KeyboardEvent): KeyCombo | null => {
   };
 };
 
-const loadStoredHotkeys = (): HotkeyMap => {
-  if (typeof window === "undefined") return DEFAULT_HOTKEYS;
-
-  try {
-    const saved = window.localStorage.getItem(HOTKEY_STORAGE_KEY);
-    if (!saved) return DEFAULT_HOTKEYS;
-    const parsed = JSON.parse(saved) as HotkeyMap;
-    return { ...DEFAULT_HOTKEYS, ...parsed };
-  } catch {
-    return DEFAULT_HOTKEYS;
-  }
-};
-
-const loadStoredLiveState = (): LiveState | null => {
-  if (typeof window === "undefined") return null;
-
-  try {
-    const saved = window.localStorage.getItem(LIVE_STATE_STORAGE_KEY);
-    if (!saved) return null;
-    return JSON.parse(saved) as LiveState;
-  } catch {
-    return null;
-  }
-};
-
-const loadStoredMatchHistory = (): MatchRecord[] => {
-  if (typeof window === "undefined") return [];
-
-  try {
-    const saved = window.localStorage.getItem(MATCH_HISTORY_STORAGE_KEY);
-    if (!saved) return [];
-    return JSON.parse(saved) as MatchRecord[];
-  } catch {
-    return [];
-  }
-};
-
-const loadStoredAccessCode = (): string => {
-  if (typeof window === "undefined") return DEFAULT_ACCESS_CODE;
-
-  try {
-    const saved = window.localStorage.getItem(ACCESS_CODE_STORAGE_KEY);
-    return saved || DEFAULT_ACCESS_CODE;
-  } catch {
-    return DEFAULT_ACCESS_CODE;
-  }
-};
-
-const checkAuthSession = (): boolean => {
-  if (typeof window === "undefined") return false;
-
-  try {
-    return window.sessionStorage.getItem(AUTH_SESSION_STORAGE_KEY) === "true";
-  } catch {
-    return false;
-  }
-};
-
 function App() {
-  // Authentication State
-  const [isAuthenticated, setIsAuthenticated] = useState<boolean>(() => checkAuthSession());
-  const [accessCode, setAccessCode] = useState<string>(() => loadStoredAccessCode());
-  const [pinInput, setPinInput] = useState("");
-  const [loginError, setLoginError] = useState(false);
+  // License & Expiration State
+  const [license, setLicense] = useState<LicenseRecord | null>(() => loadStoredLicense());
+  const [usedCodes, setUsedCodes] = useState<string[]>(() => loadStoredUsedCodes());
+  const [codeInputValue, setCodeInputValue] = useState("");
+  const [activationError, setActivationError] = useState("");
+  const [showAdminDrawer, setShowAdminDrawer] = useState(false);
+  const [adminPassInput, setAdminPassInput] = useState("");
+  const [generatedKey, setGeneratedKey] = useState("");
+
+  // Check if current 3-day license is valid
+  const isLicenseActive = useMemo(() => {
+    if (!license) return false;
+    return Date.now() < license.expiresAt;
+  }, [license]);
 
   // Restore live scoreboard state from Local Storage if available!
   const savedState = useMemo(() => loadStoredLiveState(), []);
@@ -349,10 +396,7 @@ function App() {
   const [isTimeModalOpen, setIsTimeModalOpen] = useState(false);
   const [isHotkeyModalOpen, setIsHotkeyModalOpen] = useState(false);
   const [isHistoryModalOpen, setIsHistoryModalOpen] = useState(false);
-  const [isSecurityModalOpen, setIsSecurityModalOpen] = useState(false);
-
-  const [newAccessCodeInput, setNewAccessCodeInput] = useState("");
-  const [securityNotice, setSecurityNotice] = useState("");
+  const [isLicenseInfoModalOpen, setIsLicenseInfoModalOpen] = useState(false);
 
   // Per-Team Add Player Form Inputs
   const [homeNewNum, setHomeNewNum] = useState("");
@@ -393,54 +437,50 @@ function App() {
     window.localStorage.setItem(MATCH_HISTORY_STORAGE_KEY, JSON.stringify(matchHistory));
   }, [matchHistory]);
 
-  const handleLoginSubmit = (codeToTest?: string) => {
-    const targetCode = codeToTest ?? pinInput;
-    if (targetCode === accessCode) {
-      setIsAuthenticated(true);
-      setLoginError(false);
-      setPinInput("");
-      window.sessionStorage.setItem(AUTH_SESSION_STORAGE_KEY, "true");
-    } else {
-      setLoginError(true);
-      setPinInput("");
-    }
-  };
+  // Save used codes to LocalStorage
+  useEffect(() => {
+    window.localStorage.setItem(USED_CODES_STORAGE_KEY, JSON.stringify(usedCodes));
+  }, [usedCodes]);
 
-  const handleLogout = () => {
-    setIsAuthenticated(false);
-    window.sessionStorage.removeItem(AUTH_SESSION_STORAGE_KEY);
-  };
+  // Handle 16-character access code activation
+  const handleActivateCode = () => {
+    const cleanCode = codeInputValue.replace(/[^A-Z0-9]/gi, "").toUpperCase();
 
-  const handleKeypadPress = (val: string) => {
-    if (val === "CLEAR") {
-      setPinInput("");
-      setLoginError(false);
+    if (cleanCode.length !== 16) {
+      setActivationError("Access code must be exactly 16 characters long.");
       return;
     }
 
-    if (val === "ENTER") {
-      handleLoginSubmit();
+    if (usedCodes.includes(cleanCode)) {
+      setActivationError("This 16-character access code has already been used.");
       return;
     }
 
-    if (pinInput.length < 8) {
-      setPinInput((prev) => prev + val);
-      setLoginError(false);
-    }
+    // Activate 3-day access pass!
+    const now = Date.now();
+    const newLicense: LicenseRecord = {
+      code: formatCode16(cleanCode),
+      activatedAt: now,
+      expiresAt: now + THREE_DAYS_MS,
+    };
+
+    setLicense(newLicense);
+    setUsedCodes((prev) => [...prev, cleanCode]);
+    window.localStorage.setItem(LICENSE_STORAGE_KEY, JSON.stringify(newLicense));
+
+    setActivationError("");
+    setCodeInputValue("");
+    alert("🎉 3-Day Scorekeeper Access Code successfully activated!");
   };
 
-  const handleChangeAccessCode = () => {
-    if (!newAccessCodeInput.trim() || newAccessCodeInput.trim().length < 4) {
-      setSecurityNotice("Access code must be at least 4 digits.");
+  const handleAdminGenerateKey = () => {
+    if (adminPassInput.trim() !== ADMIN_MASTER_PASSWORD) {
+      alert("Invalid Admin Password!");
       return;
     }
 
-    const newCode = newAccessCodeInput.trim();
-    setAccessCode(newCode);
-    window.localStorage.setItem(ACCESS_CODE_STORAGE_KEY, newCode);
-    setNewAccessCodeInput("");
-    setSecurityNotice("✅ Access Code successfully updated!");
-    window.setTimeout(() => setIsSecurityModalOpen(false), 1200);
+    const key = generate16CharKey();
+    setGeneratedKey(key);
   };
 
   const handleSaveCurrentMatch = () => {
@@ -1023,7 +1063,7 @@ function App() {
   }, [hotkeys]);
 
   useEffect(() => {
-    if (!isAuthenticated) return;
+    if (!isLicenseActive) return;
 
     const handleKeyDown = (event: KeyboardEvent) => {
       if (recordingActionId) {
@@ -1085,7 +1125,7 @@ function App() {
       window.removeEventListener("keydown", handleKeyDown, true);
       window.removeEventListener("keyup", handleKeyUp, true);
     };
-  }, [assignHotkey, executeAction, hotkeyLookup, isAuthenticated, recordingActionId, startHorn, stopHorn]);
+  }, [assignHotkey, executeAction, hotkeyLookup, isLicenseActive, recordingActionId, startHorn, stopHorn]);
 
   useEffect(() => {
     if (!isRunning) return;
@@ -1217,7 +1257,7 @@ function App() {
             </button>
           </div>
 
-          {/* Paper Table with Minus (-) and Plus (+) for Points, Fouls, Rebounds, and Assists */}
+          {/* Paper Table */}
           <table className="paper-table">
             <thead>
               <tr>
@@ -1372,38 +1412,106 @@ function App() {
     );
   };
 
-  // If user is not authenticated, render the Access Code Login Screen!
-  if (!isAuthenticated) {
+  // If 3-Day License is Expired or Not Activated, render the Activation / Purchase Screen!
+  if (!isLicenseActive) {
     return (
       <div className="login-gate-overlay">
         <div className="login-card">
           <div className="login-brand-logo">UM</div>
-          <h2>Panabo Scoreboard</h2>
-          <p>Enter Official Access Code to Unlock Desk</p>
+          <h2>3-Day Access Code Required</h2>
+          <p>
+            {license
+              ? "Your 3-Day Scorekeeper Access Pass has EXPIRED. Please request or purchase a new 16-character access code from the Administrator."
+              : "Enter your 16-character Access Code to activate your 3-Day Scorekeeper Desk Pass."}
+          </p>
 
-          {loginError && <div className="login-error-alert">⚠️ Incorrect Access Code. Try again!</div>}
+          {activationError && <div className="login-error-alert">⚠️ {activationError}</div>}
 
-          <div className="pin-display-box">{pinInput ? "•".repeat(pinInput.length) : "ENTER PIN"}</div>
+          <input
+            className="code-input-16"
+            placeholder="XXXX-XXXX-XXXX-XXXX"
+            maxLength={19}
+            value={codeInputValue}
+            onChange={(e) => setCodeInputValue(formatCode16(e.target.value))}
+          />
 
-          <div className="pin-keypad">
-            {["1", "2", "3", "4", "5", "6", "7", "8", "9"].map((num) => (
-              <button key={num} className="pin-btn" onClick={() => handleKeypadPress(num)}>
-                {num}
+          <button className="btn-activate-pass" onClick={handleActivateCode}>
+            ACTIVATE 3-DAY PASS
+          </button>
+
+          {/* Contact Administrator Card */}
+          <div className="admin-contact-box">
+            <div className="admin-contact-header">
+              <span>💬 Buy / Request Code from Administrator:</span>
+            </div>
+            <div className="admin-contact-list">
+              <div className="admin-contact-item">
+                <span>Admin Office:</span>
+                <strong>UM Panabo Arena Sports Committee</strong>
+              </div>
+              <div className="admin-contact-item">
+                <span>GCash / Mobile:</span>
+                <strong>0917-888-9999</strong>
+              </div>
+              <div className="admin-contact-item">
+                <span>Price / Duration:</span>
+                <strong style={{ color: "#f59e0b" }}>3-Day Unlimited Tournament Pass</strong>
+              </div>
+            </div>
+
+            <div style={{ marginTop: "0.6rem", textAlign: "center" }}>
+              <button
+                style={{
+                  background: "none",
+                  border: "none",
+                  color: "#64748b",
+                  fontSize: "0.72rem",
+                  cursor: "pointer",
+                  textDecoration: "underline",
+                }}
+                onClick={() => setShowAdminDrawer(!showAdminDrawer)}
+              >
+                {showAdminDrawer ? "Hide Admin Key Generator" : "🔑 Tournament Admin Key Generator"}
               </button>
-            ))}
-            <button className="pin-btn action-btn clear" onClick={() => handleKeypadPress("CLEAR")}>
-              CLR
-            </button>
-            <button className="pin-btn" onClick={() => handleKeypadPress("0")}>
-              0
-            </button>
-            <button className="pin-btn action-btn submit" onClick={() => handleKeypadPress("ENTER")}>
-              GO
-            </button>
-          </div>
+            </div>
 
-          <div className="login-default-hint">
-            Default Access Code: <strong>1234</strong>
+            {/* Hidden Admin Key Generator Drawer */}
+            {showAdminDrawer && (
+              <div style={{ marginTop: "0.65rem", paddingTop: "0.65rem", borderTop: "1px solid rgba(255, 255, 255, 0.1)" }}>
+                <div style={{ fontSize: "0.72rem", fontWeight: "800", color: "#f59e0b", marginBottom: "0.35rem" }}>
+                  ADMIN KEY GENERATOR TOOL
+                </div>
+                <div style={{ display: "flex", gap: "0.35rem", marginBottom: "0.45rem" }}>
+                  <input
+                    type="password"
+                    placeholder="Enter Admin Password"
+                    className="paper-input"
+                    style={{ flex: 1, background: "#0f172a !important", color: "#fff !important" }}
+                    value={adminPassInput}
+                    onChange={(e) => setAdminPassInput(e.target.value)}
+                  />
+                  <button className="btn-paper-add" onClick={handleAdminGenerateKey}>
+                    Generate
+                  </button>
+                </div>
+                {generatedKey && (
+                  <div
+                    style={{
+                      padding: "0.45rem",
+                      background: "rgba(245, 158, 11, 0.15)",
+                      border: "1px solid #f59e0b",
+                      borderRadius: "0.4rem",
+                      color: "#facc15",
+                      fontFamily: "var(--font-digital)",
+                      fontWeight: "900",
+                      textAlign: "center",
+                    }}
+                  >
+                    Key: {generatedKey}
+                  </div>
+                )}
+              </div>
+            )}
           </div>
         </div>
       </div>
@@ -1428,6 +1536,15 @@ function App() {
             {isRunning ? "LIVE" : "PAUSED"}
           </div>
 
+          {/* Active 3-Day License Expiration Pill */}
+          <button
+            className="license-expiry-pill"
+            onClick={() => setIsLicenseInfoModalOpen(true)}
+            title="Click for Access Pass details"
+          >
+            🟢 {license ? formatTimeRemaining(license.expiresAt - Date.now()) : "3-Day Pass Active"}
+          </button>
+
           <button
             className={`mode-toggle-btn ${isRunningTimeMode ? "running-active" : ""}`}
             onClick={() => setIsRunningTimeMode((prev) => !prev)}
@@ -1449,11 +1566,17 @@ function App() {
           <button className="icon-btn" onClick={() => setIsHotkeyModalOpen(true)} title="Custom Hotkeys">
             ⌨️ Hotkeys
           </button>
-          <button className="icon-btn" onClick={() => setIsSecurityModalOpen(true)} title="Security Settings">
-            🔑 Security
-          </button>
-          <button className="icon-btn lock-btn" onClick={handleLogout} title="Lock Desk (Logout)">
-            🔒 Lock
+          <button
+            className="icon-btn lock-btn"
+            onClick={() => {
+              const lockNow = window.confirm("Deactivate current pass & exit to Access Code login screen?");
+              if (!lockNow) return;
+              setLicense(null);
+              window.localStorage.removeItem(LICENSE_STORAGE_KEY);
+            }}
+            title="Deactivate Pass (Logout)"
+          >
+            🔒 Deactivate Pass
           </button>
           <button className="icon-btn" onClick={toggleFullscreen} title="Toggle Fullscreen">
             ⛶ Screen
@@ -1596,6 +1719,57 @@ function App() {
         </div>
       </footer>
 
+      {/* Modal: License Info Details */}
+      {isLicenseInfoModalOpen && (
+        <div className="modal-backdrop" onClick={() => setIsLicenseInfoModalOpen(false)}>
+          <div className="modal-card" style={{ maxWidth: "480px" }} onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header">
+              <h2>🎟️ 3-Day Pass Details</h2>
+              <button className="modal-close-btn" onClick={() => setIsLicenseInfoModalOpen(false)}>
+                ✕
+              </button>
+            </div>
+
+            <div className="modal-body">
+              <div className="admin-contact-box" style={{ marginBottom: "1rem" }}>
+                <div className="admin-contact-item">
+                  <span>Activated Key:</span>
+                  <strong>{license?.code}</strong>
+                </div>
+                <div className="admin-contact-item">
+                  <span>Activated On:</span>
+                  <strong>{license ? new Date(license.activatedAt).toLocaleString() : ""}</strong>
+                </div>
+                <div className="admin-contact-item">
+                  <span>Expires On:</span>
+                  <strong style={{ color: "#ef4444" }}>
+                    {license ? new Date(license.expiresAt).toLocaleString() : ""}
+                  </strong>
+                </div>
+                <div className="admin-contact-item">
+                  <span>Status:</span>
+                  <strong style={{ color: "#22c55e" }}>
+                    {license ? formatTimeRemaining(license.expiresAt - Date.now()) : ""}
+                  </strong>
+                </div>
+              </div>
+
+              <button
+                className="btn-desk-action danger"
+                style={{ width: "100%", padding: "0.6rem" }}
+                onClick={() => {
+                  setLicense(null);
+                  window.localStorage.removeItem(LICENSE_STORAGE_KEY);
+                  setIsLicenseInfoModalOpen(false);
+                }}
+              >
+                🔒 Deactivate Pass & Enter New Code
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Modal: Saved Games & Match History Archive */}
       {isHistoryModalOpen && (
         <div className="modal-backdrop" onClick={() => setIsHistoryModalOpen(false)}>
@@ -1735,49 +1909,6 @@ function App() {
                   })}
                 </div>
               )}
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Modal: Security Settings / Change Access Code */}
-      {isSecurityModalOpen && (
-        <div className="modal-backdrop" onClick={() => setIsSecurityModalOpen(false)}>
-          <div className="modal-card" onClick={(e) => e.stopPropagation()}>
-            <div className="modal-header">
-              <h2>🔑 Security & Access Code Settings</h2>
-              <button className="modal-close-btn" onClick={() => setIsSecurityModalOpen(false)}>
-                ✕
-              </button>
-            </div>
-
-            <div className="modal-body">
-              {securityNotice && <div className="hotkey-notice-bar">{securityNotice}</div>}
-
-              <div className="time-field" style={{ width: "100%", marginBottom: "1rem" }}>
-                <label>Current Access Code</label>
-                <input
-                  type="text"
-                  disabled
-                  value={accessCode}
-                  style={{ width: "100%", maxWidth: "240px", opacity: 0.7 }}
-                />
-              </div>
-
-              <div className="time-field" style={{ width: "100%", marginBottom: "1rem" }}>
-                <label>Enter New Access Code (PIN)</label>
-                <input
-                  type="password"
-                  placeholder="New PIN (min 4 digits)"
-                  value={newAccessCodeInput}
-                  onChange={(e) => setNewAccessCodeInput(e.target.value)}
-                  style={{ width: "100%", maxWidth: "240px", color: "#38bdf8" }}
-                />
-              </div>
-
-              <button className="horn-btn-huge" style={{ width: "100%" }} onClick={handleChangeAccessCode}>
-                UPDATE ACCESS CODE
-              </button>
             </div>
           </div>
         </div>
