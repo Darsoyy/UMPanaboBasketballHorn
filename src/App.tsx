@@ -47,6 +47,7 @@ const ACTION_DEFINITIONS = [
   { id: "awayTimeoutAdd", label: "Away Add Timeout", category: "Away Team" },
   { id: "customTimeSet", label: "Set Custom Time", category: "Game Actions" },
   { id: "resetShotClock", label: "Reset Shot Clock", category: "Game Actions" },
+  { id: "toggleScoreboard", label: "Toggle Show/Hide Scoreboard", category: "Game Actions" },
   { id: "endQuarter", label: "End Quarter", category: "Game Actions" },
   { id: "resetEverything", label: "Reset Everything", category: "Game Actions" },
 ] as const;
@@ -145,6 +146,7 @@ const DEFAULT_HOTKEYS: HotkeyMap = {
   awayScoreMinus2: "KeyK",
   awayScoreMinus3: "KeyL",
   resetShotClock: "KeyM",
+  toggleScoreboard: "KeyV",
   endQuarter: "KeyN",
   resetEverything: "Ctrl+Shift+KeyR",
 };
@@ -365,6 +367,48 @@ const readComboFromEvent = (event: KeyboardEvent): KeyCombo | null => {
   };
 };
 
+type RollingScoreProps = {
+  score: number;
+  animClass?: string;
+  isHome?: boolean;
+};
+
+const RollingScoreNumber = ({ score, animClass = "", isHome = true }: RollingScoreProps) => {
+  const [displayScore, setDisplayScore] = useState(score);
+  const [prevScore, setPrevScore] = useState<number | null>(null);
+  const [isRolling, setIsRolling] = useState(false);
+
+  useEffect(() => {
+    if (score !== displayScore) {
+      setPrevScore(displayScore);
+      setDisplayScore(score);
+      setIsRolling(true);
+      const timer = setTimeout(() => {
+        setIsRolling(false);
+        setPrevScore(null);
+      }, 300);
+      return () => clearTimeout(timer);
+    }
+  }, [score, displayScore]);
+
+  const colorClass = isHome ? "home" : "away";
+
+  return (
+    <div className={`rolling-score-box ${colorClass}`}>
+      {isRolling && prevScore !== null ? (
+        <div className="rolling-score-digit-container">
+          <span className={`rolling-score-number roll-out ${animClass}`}>{prevScore}</span>
+          <span className={`rolling-score-number roll-in ${animClass}`} style={{ position: "absolute", top: 0, left: 0 }}>
+            {displayScore}
+          </span>
+        </div>
+      ) : (
+        <span className={`rolling-score-number ${animClass}`}>{displayScore}</span>
+      )}
+    </div>
+  );
+};
+
 function App() {
   // License State
   const [license, setLicense] = useState<LicenseRecord | null>(() => loadStoredLicense());
@@ -393,6 +437,28 @@ function App() {
   // NBA Broadcast Score Animation States
   const [homeScoreAnim, setHomeScoreAnim] = useState<ScoreAnimState>(null);
   const [awayScoreAnim, setAwayScoreAnim] = useState<ScoreAnimState>(null);
+
+  // Broadcast Entrance / Exit & Pulse States
+  const [visibilityPhase, setVisibilityPhase] = useState<"visible" | "entering" | "exiting" | "hidden">("visible");
+  const [homePulse, setHomePulse] = useState(false);
+  const [awayPulse, setAwayPulse] = useState(false);
+  const [homeNameAnim, setHomeNameAnim] = useState(false);
+  const [awayNameAnim, setAwayNameAnim] = useState(false);
+
+  // Toggle Scoreboard Entrance/Exit Animation
+  const toggleScoreboardVisibility = useCallback(() => {
+    if (visibilityPhase === "visible" || visibilityPhase === "entering") {
+      setVisibilityPhase("exiting");
+      setTimeout(() => {
+        setVisibilityPhase("hidden");
+      }, 380);
+    } else {
+      setVisibilityPhase("entering");
+      setTimeout(() => {
+        setVisibilityPhase("visible");
+      }, 750);
+    }
+  }, [visibilityPhase]);
 
   // Saved Games & Match History State
   const [matchHistory, setMatchHistory] = useState<MatchRecord[]>(() => loadStoredMatchHistory());
@@ -425,7 +491,6 @@ function App() {
   const hasPlayedGameEndHornRef = useRef(false);
   const hasPlayedShotEndHornRef = useRef(false);
 
-  // Helper to trigger NBA-style score pop animation
   const triggerScoreAnim = useCallback((side: TeamSide, amount: number) => {
     if (amount <= 0 || amount > 3) return;
 
@@ -434,8 +499,12 @@ function App() {
 
     if (side === "home") {
       setHomeScoreAnim(animObj);
+      setHomePulse(true);
+      setTimeout(() => setHomePulse(false), 360);
     } else {
       setAwayScoreAnim(animObj);
+      setAwayPulse(true);
+      setTimeout(() => setAwayPulse(false), 360);
     }
   }, []);
 
@@ -749,6 +818,13 @@ function App() {
         ...team,
         name: name.toUpperCase(),
       }));
+      if (side === "home") {
+        setHomeNameAnim(true);
+        setTimeout(() => setHomeNameAnim(false), 300);
+      } else {
+        setAwayNameAnim(true);
+        setTimeout(() => setAwayNameAnim(false), 300);
+      }
     },
     [updateTeam]
   );
@@ -1011,6 +1087,9 @@ function App() {
         case "resetShotClock":
           setShotSeconds(DEFAULT_SHOT_SECONDS);
           break;
+        case "toggleScoreboard":
+          toggleScoreboardVisibility();
+          break;
         case "endQuarter":
           endQuarter();
           break;
@@ -1027,6 +1106,7 @@ function App() {
       gameSeconds,
       resetEverything,
       resetGameClock,
+      toggleScoreboardVisibility,
     ]
   );
 
@@ -1220,15 +1300,17 @@ function App() {
     const popLabel = animState?.type === "+3" ? "💥 THREE POINTER MADE! (+3)" : animState?.type === "+2" ? "🏀 FIELD GOAL MADE! (+2)" : "🎯 FREE THROW MADE! (+1)";
     const popClass = animState ? `pop-${animState.type.slice(1)}` : "";
     const waveClass = isHome ? "home-wave" : "away-wave";
+    const pulseClass = isHome ? (homePulse ? "pulse-home" : "") : (awayPulse ? "pulse-away" : "");
+    const nameAnimClass = isHome ? (homeNameAnim ? "team-name-slide" : "") : (awayNameAnim ? "team-name-slide" : "");
 
     return (
-      <section className={`team-card ${isHome ? "home" : "away"}`}>
+      <section className={`team-card ${isHome ? "home" : "away"} ${pulseClass}`}>
         <div className="team-header-row">
           <span className="team-tag">{isHome ? "HOME TEAM" : "AWAY TEAM"}</span>
         </div>
 
         <input
-          className="team-name-input"
+          className={`team-name-input ${nameAnimClass}`}
           aria-label={`${isHome ? "Home" : "Away"} team name`}
           value={team.name}
           maxLength={18}
@@ -1245,7 +1327,7 @@ function App() {
               </div>
             </>
           )}
-          <span className={`score-number ${animClass}`}>{team.score}</span>
+          <RollingScoreNumber score={team.score} animClass={animClass} isHome={isHome} />
         </div>
 
         <div className="team-stats-row">
@@ -1543,7 +1625,8 @@ function App() {
   }
 
   return (
-    <div className="scoreboard-viewport">
+    <>
+      <div className={`scoreboard-viewport anim-${visibilityPhase}`}>
       {/* Header Bar */}
       <header className="arena-header">
         <div className="brand-section">
@@ -1581,6 +1664,20 @@ function App() {
         </div>
 
         <div className="header-actions">
+          {/* Show / Hide Broadcast Scoreboard Toggle */}
+          <button
+            className="icon-btn"
+            onClick={toggleScoreboardVisibility}
+            title="Broadcast Entrance / Exit (Hotkey: V)"
+            style={{
+              background: visibilityPhase === "hidden" || visibilityPhase === "exiting" ? "rgba(239, 68, 68, 0.25)" : "rgba(34, 197, 94, 0.2)",
+              borderColor: visibilityPhase === "hidden" || visibilityPhase === "exiting" ? "rgba(239, 68, 68, 0.5)" : "rgba(34, 197, 94, 0.5)",
+              color: "#ffffff"
+            }}
+          >
+            📺 {visibilityPhase === "hidden" || visibilityPhase === "exiting" ? "SHOW SCOREBOARD" : "HIDE SCOREBOARD"}
+          </button>
+
           <button className="icon-btn" onClick={() => setIsHistoryModalOpen(true)} title="Match History Archive">
             📂 History ({matchHistory.length})
           </button>
@@ -1734,6 +1831,9 @@ function App() {
 
         {/* Action / Reset */}
         <div className="quick-actions-bar">
+          <button className="btn-desk-action" onClick={toggleScoreboardVisibility} title="Show/Hide Scoreboard (Hotkey: V)">
+            📺 {visibilityPhase === "hidden" || visibilityPhase === "exiting" ? "Show Board" : "Hide Board"}
+          </button>
           <button className="btn-desk-action" onClick={() => setIsTimeModalOpen(true)}>
             Custom Time
           </button>
@@ -1742,6 +1842,7 @@ function App() {
           </button>
         </div>
       </footer>
+    </div>
 
       {/* Modal: License Info Details */}
       {isLicenseInfoModalOpen && (
@@ -2062,7 +2163,7 @@ function App() {
           </div>
         </div>
       )}
-    </div>
+    </>
   );
 }
 

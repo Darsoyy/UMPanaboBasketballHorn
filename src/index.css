@@ -29,6 +29,9 @@
   --shot-primary: #ff4d4d;
   --shot-glow: rgba(255, 77, 77, 0.35);
 
+  /* Broadcast Easing Curve */
+  --ease-broadcast: cubic-bezier(0.22, 1, 0.36, 1);
+
   color-scheme: dark;
 }
 
@@ -72,6 +75,190 @@ button, input, select {
   padding: 0.5rem 0.85rem 0.5rem;
   gap: 0.45rem;
   overflow: hidden;
+  will-change: transform, opacity;
+  transition: opacity 300ms var(--ease-broadcast), transform 350ms var(--ease-broadcast);
+}
+
+/* ========================================================= */
+/* BROADCAST ENTRANCE & EXIT ANIMATIONS (FAST REVEALS & WIPES) */
+/* ========================================================= */
+
+.scoreboard-viewport.anim-hidden {
+  opacity: 0;
+  pointer-events: none;
+  transform: translateY(-25px) scale(0.96);
+}
+
+.scoreboard-viewport.anim-exiting {
+  animation: broadcastExit 380ms cubic-bezier(0.4, 0, 1, 1) forwards;
+}
+
+@keyframes broadcastExit {
+  0% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+    clip-path: polygon(0 0, 100% 0, 100% 100%, 0 100%);
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(-30px) scale(0.94);
+    clip-path: polygon(0 0, 100% 0, 100% 0, 0 0);
+  }
+}
+
+.scoreboard-viewport.anim-entering {
+  animation: broadcastMasterIntro 750ms var(--ease-broadcast) forwards;
+}
+
+@keyframes broadcastMasterIntro {
+  0% {
+    opacity: 0;
+    transform: translateY(-20px) scale(0.96);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+/* Staggered Element Entrance Sequences during anim-entering */
+.scoreboard-viewport.anim-entering .arena-header {
+  animation: broadcastHeaderIn 500ms var(--ease-broadcast) 0ms forwards;
+}
+
+.scoreboard-viewport.anim-entering .team-card.home {
+  animation: broadcastHomePanelIn 600ms var(--ease-broadcast) 50ms forwards;
+}
+
+.scoreboard-viewport.anim-entering .team-card.away {
+  animation: broadcastAwayPanelIn 600ms var(--ease-broadcast) 140ms forwards;
+}
+
+.scoreboard-viewport.anim-entering .center-column {
+  animation: broadcastCenterIn 650ms var(--ease-broadcast) 220ms forwards;
+}
+
+.scoreboard-viewport.anim-entering .arena-footer-desk {
+  animation: broadcastFooterIn 550ms var(--ease-broadcast) 300ms forwards;
+}
+
+/* Keyframe Stagger Rules */
+@keyframes broadcastHeaderIn {
+  0% { opacity: 0; transform: translateY(-30px); }
+  100% { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes broadcastHomePanelIn {
+  0% { opacity: 0; transform: translateX(-40px) scale(0.95); clip-path: polygon(0 0, 0 0, 0 100%, 0 100%); }
+  100% { opacity: 1; transform: translateX(0) scale(1); clip-path: polygon(0 0, 100% 0, 100% 100%, 0 100%); }
+}
+
+@keyframes broadcastAwayPanelIn {
+  0% { opacity: 0; transform: translateX(40px) scale(0.95); clip-path: polygon(100% 0, 100% 0, 100% 100%, 100% 100%); }
+  100% { opacity: 1; transform: translateX(0) scale(1); clip-path: polygon(0 0, 100% 0, 100% 100%, 0 100%); }
+}
+
+@keyframes broadcastCenterIn {
+  0% { opacity: 0; transform: scale(0.85); }
+  100% { opacity: 1; transform: scale(1); }
+}
+
+@keyframes broadcastFooterIn {
+  0% { opacity: 0; transform: translateY(30px); }
+  100% { opacity: 1; transform: translateY(0); }
+}
+
+/* ========================================================= */
+/* VERTICAL ROLLING SCORE NUMBER TRANSITION */
+/* ========================================================= */
+.rolling-score-box {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  height: 1.05em;
+  position: relative;
+}
+
+.rolling-score-digit-container {
+  display: flex;
+  flex-direction: column;
+  position: relative;
+}
+
+.rolling-score-number {
+  font-family: var(--font-digital);
+  font-size: clamp(3.2rem, 5.8vw, 5.5rem);
+  font-weight: 900;
+  line-height: 0.95;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.04em;
+  user-select: none;
+  display: inline-block;
+  will-change: transform, opacity;
+}
+
+.rolling-score-number.roll-out {
+  animation: rollNumberOut 280ms var(--ease-broadcast) forwards;
+}
+
+.rolling-score-number.roll-in {
+  animation: rollNumberIn 280ms var(--ease-broadcast) forwards;
+}
+
+@keyframes rollNumberOut {
+  0% { transform: translateY(0%); opacity: 1; }
+  100% { transform: translateY(-100%); opacity: 0; }
+}
+
+@keyframes rollNumberIn {
+  0% { transform: translateY(100%); opacity: 0; }
+  100% { transform: translateY(0%); opacity: 1; }
+}
+
+/* ========================================================= */
+/* TEAM PANEL HIGHLIGHT PULSE & TEAM NAME SLIDE TRANSITIONS */
+/* ========================================================= */
+
+.team-card.pulse-home {
+  animation: homePanelPulse 350ms ease forwards;
+}
+
+.team-card.pulse-away {
+  animation: awayPanelPulse 350ms ease forwards;
+}
+
+@keyframes homePanelPulse {
+  0% {
+    background: linear-gradient(165deg, rgba(245, 158, 11, 0.4), rgba(13, 20, 36, 0.95));
+    border-color: rgba(245, 158, 11, 0.8);
+    box-shadow: 0 0 40px rgba(245, 158, 11, 0.5);
+  }
+  100% {
+    background: linear-gradient(165deg, rgba(245, 158, 11, 0.08) 0%, rgba(13, 20, 36, 0.85) 60%);
+    border-color: var(--home-border);
+  }
+}
+
+@keyframes awayPanelPulse {
+  0% {
+    background: linear-gradient(195deg, rgba(6, 182, 212, 0.4), rgba(13, 20, 36, 0.95));
+    border-color: rgba(6, 182, 212, 0.8);
+    box-shadow: 0 0 40px rgba(6, 182, 212, 0.5);
+  }
+  100% {
+    background: linear-gradient(195deg, rgba(6, 182, 212, 0.08) 0%, rgba(13, 20, 36, 0.85) 60%);
+    border-color: var(--away-border);
+  }
+}
+
+.team-name-slide {
+  animation: teamNameSlideIn 280ms var(--ease-broadcast) forwards;
+}
+
+@keyframes teamNameSlideIn {
+  0% { transform: translateX(15px); opacity: 0; }
+  100% { transform: translateX(0); opacity: 1; }
 }
 
 /* Top Header Bar */
