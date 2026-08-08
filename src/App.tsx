@@ -260,12 +260,12 @@ function App() {
   // Modals & Popovers
   const [isTimeModalOpen, setIsTimeModalOpen] = useState(false);
   const [isHotkeyModalOpen, setIsHotkeyModalOpen] = useState(false);
-  const [isStatsModalOpen, setIsStatsModalOpen] = useState(false);
-  const [activeStatsTab, setActiveStatsTab] = useState<TeamSide>("home");
 
-  // Form Inputs for Adding Player
-  const [newPlayerNumber, setNewPlayerNumber] = useState("");
-  const [newPlayerName, setNewPlayerName] = useState("");
+  // Per-Team Add Player Form Inputs
+  const [homeNewNum, setHomeNewNum] = useState("");
+  const [homeNewName, setHomeNewName] = useState("");
+  const [awayNewNum, setAwayNewNum] = useState("");
+  const [awayNewName, setAwayNewName] = useState("");
 
   const [customMinutes, setCustomMinutes] = useState("8");
   const [customSeconds, setCustomSeconds] = useState("00");
@@ -516,7 +516,7 @@ function App() {
     [updateTeam]
   );
 
-  // Player Stats Operations
+  // Player Stats Operations directly on the white sheet
   const adjustPlayerStat = useCallback(
     (side: TeamSide, playerId: string, statKey: keyof Omit<Player, "id" | "number" | "name">, amount: number) => {
       updateTeam(side, (team) => {
@@ -551,15 +551,18 @@ function App() {
     [checkRunningTimeResume, updateTeam]
   );
 
-  const handleAddPlayer = useCallback(
+  const handleAddPlayerInline = useCallback(
     (side: TeamSide) => {
-      if (!newPlayerNumber.trim() || !newPlayerName.trim()) return;
+      const num = side === "home" ? homeNewNum : awayNewNum;
+      const name = side === "home" ? homeNewName : awayNewName;
+
+      if (!num.trim() || !name.trim()) return;
 
       updateTeam(side, (team) => {
         const newPlayer: Player = {
           id: `p-${Date.now()}`,
-          number: newPlayerNumber.trim(),
-          name: newPlayerName.trim(),
+          number: num.trim(),
+          name: name.trim(),
           pts: 0,
           fouls: 0,
           reb: 0,
@@ -570,10 +573,15 @@ function App() {
         return { ...team, players: [...team.players, newPlayer] };
       });
 
-      setNewPlayerNumber("");
-      setNewPlayerName("");
+      if (side === "home") {
+        setHomeNewNum("");
+        setHomeNewName("");
+      } else {
+        setAwayNewNum("");
+        setAwayNewName("");
+      }
     },
-    [newPlayerName, newPlayerNumber, updateTeam]
+    [awayNewName, awayNewNum, homeNewName, homeNewNum, updateTeam]
   );
 
   const handleDeletePlayer = useCallback(
@@ -621,7 +629,7 @@ function App() {
   }, []);
 
   const resetEverything = useCallback(() => {
-    const shouldReset = window.confirm("Reset the entire scoreboard and player stats?");
+    const shouldReset = window.confirm("Reset the entire scoreboard and scorekeeper sheets?");
     if (!shouldReset) return;
 
     setIsRunning(false);
@@ -927,35 +935,16 @@ function App() {
     }, {});
   }, []);
 
-  // Compute Top Scorer & Foul Trouble for Team Card
-  const getTeamHighlights = (team: Team) => {
-    const topScorer = [...team.players].sort((a, b) => b.pts - a.pts)[0];
-    const foulTrouble = team.players.find((p) => p.fouls >= 4);
-
-    return {
-      topScorer: topScorer && topScorer.pts > 0 ? `#${topScorer.number} ${topScorer.name} (${topScorer.pts}p)` : null,
-      foulTrouble: foulTrouble ? `#${foulTrouble.number} ${foulTrouble.name} (${foulTrouble.fouls} PF)` : null,
-    };
-  };
-
   const renderTeamCard = (side: TeamSide, team: Team) => {
     const isHome = side === "home";
     const prefix = isHome ? "home" : "away";
-    const highlights = getTeamHighlights(team);
+    const currNum = isHome ? homeNewNum : awayNewNum;
+    const currName = isHome ? homeNewName : awayNewName;
 
     return (
       <section className={`team-card ${isHome ? "home" : "away"}`}>
         <div className="team-header-row">
           <span className="team-tag">{isHome ? "HOME TEAM" : "AWAY TEAM"}</span>
-          <button
-            className="roster-drawer-btn"
-            onClick={() => {
-              setActiveStatsTab(side);
-              setIsStatsModalOpen(true);
-            }}
-          >
-            👥 Roster ({team.players.length})
-          </button>
         </div>
 
         <input
@@ -965,20 +954,6 @@ function App() {
           maxLength={18}
           onChange={(event) => setTeamName(side, event.target.value)}
         />
-
-        {/* Player Stats Highlights */}
-        {(highlights.topScorer || highlights.foulTrouble) && (
-          <div className="player-summary-strip">
-            {highlights.topScorer ? (
-              <span className="top-scorer-badge">🔥 {highlights.topScorer}</span>
-            ) : (
-              <span></span>
-            )}
-            {highlights.foulTrouble && (
-              <span className="foul-warning-badge">⚠️ {highlights.foulTrouble}</span>
-            )}
-          </div>
-        )}
 
         <div className="score-box">
           <span className="score-number">{team.score}</span>
@@ -1046,11 +1021,120 @@ function App() {
             </div>
           </div>
         </div>
+
+        {/* EMBEDDED WHITE PAPER SCOREKEEPER PLAYER STATS SHEET */}
+        <div className="paper-score-sheet">
+          <div className="paper-sheet-header">
+            <span className="paper-sheet-title">📝 OFFICIAL SCOREKEEPER SHEET</span>
+          </div>
+
+          {/* Quick Add Player Form Row */}
+          <div className="paper-add-player-row">
+            <input
+              className="paper-input num-input"
+              placeholder="#"
+              maxLength={3}
+              value={currNum}
+              onChange={(e) => (isHome ? setHomeNewNum(e.target.value) : setAwayNewNum(e.target.value))}
+            />
+            <input
+              className="paper-input name-input"
+              placeholder="Add Player Name"
+              maxLength={20}
+              value={currName}
+              onChange={(e) => (isHome ? setHomeNewName(e.target.value) : setAwayNewName(e.target.value))}
+            />
+            <button className="btn-paper-add" onClick={() => handleAddPlayerInline(side)}>
+              + Add
+            </button>
+          </div>
+
+          {/* Paper Table */}
+          <table className="paper-table">
+            <thead>
+              <tr>
+                <th style={{ width: "8%" }}>#</th>
+                <th className="left">PLAYER</th>
+                <th style={{ width: "12%" }}>PTS</th>
+                <th style={{ width: "10%" }}>F</th>
+                <th style={{ width: "8%" }}>R</th>
+                <th style={{ width: "8%" }}>A</th>
+                <th style={{ width: "38%" }}>QUICK STAT CONTROL</th>
+              </tr>
+            </thead>
+            <tbody>
+              {team.players.map((player) => (
+                <tr key={player.id}>
+                  <td className="paper-player-num">#{player.number}</td>
+                  <td>
+                    <div className="paper-player-name" title={player.name}>
+                      {player.name}
+                      {player.fouls >= 5 && <span className="paper-foul-out">OUT</span>}
+                      {player.fouls === 4 && <span className="paper-foul-warn">4F</span>}
+                    </div>
+                  </td>
+                  <td className="paper-stat-badge">{player.pts}</td>
+                  <td className="paper-stat-badge" style={{ color: player.fouls >= 5 ? "#dc2626" : "#0f172a" }}>
+                    {player.fouls}
+                  </td>
+                  <td style={{ color: "#64748b" }}>{player.reb}</td>
+                  <td style={{ color: "#64748b" }}>{player.ast}</td>
+
+                  {/* Inline Committee Quick Controls */}
+                  <td>
+                    <div className="paper-btn-group">
+                      <button
+                        className="btn-paper-act pt1"
+                        onClick={() => adjustPlayerStat(side, player.id, "pts", 1)}
+                        title="+1 Pt"
+                      >
+                        +1
+                      </button>
+                      <button
+                        className="btn-paper-act pt2"
+                        onClick={() => adjustPlayerStat(side, player.id, "pts", 2)}
+                        title="+2 Pts"
+                      >
+                        +2
+                      </button>
+                      <button
+                        className="btn-paper-act pt3"
+                        onClick={() => adjustPlayerStat(side, player.id, "pts", 3)}
+                        title="+3 Pts"
+                      >
+                        +3
+                      </button>
+                      <button
+                        className="btn-paper-act foul"
+                        onClick={() => adjustPlayerStat(side, player.id, "fouls", 1)}
+                        title="+1 Foul"
+                      >
+                        +F
+                      </button>
+                      <button
+                        className="btn-paper-act del"
+                        onClick={() => handleDeletePlayer(side, player.id)}
+                        title="Remove"
+                      >
+                        ✕
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              ))}
+              {team.players.length === 0 && (
+                <tr>
+                  <td colSpan={7} style={{ textAlign: "center", color: "#64748b", padding: "0.75rem" }}>
+                    No players in roster. Use the form above to add players.
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </div>
       </section>
     );
   };
-
-  const currentStatsTeam = activeStatsTab === "home" ? home : away;
 
   return (
     <div className="scoreboard-viewport">
@@ -1082,13 +1166,6 @@ function App() {
         </div>
 
         <div className="header-actions">
-          <button
-            className="icon-btn stats-btn"
-            onClick={() => setIsStatsModalOpen(true)}
-            title="Player Stats & Box Score"
-          >
-            📊 Player Stats
-          </button>
           <button className="icon-btn" onClick={() => setIsTimeModalOpen(true)} title="Set Custom Time">
             ⏱️ Time
           </button>
@@ -1232,204 +1309,6 @@ function App() {
           </button>
         </div>
       </footer>
-
-      {/* Modal: Player Stats Tracker & Roster Manager */}
-      {isStatsModalOpen && (
-        <div className="modal-backdrop" onClick={() => setIsStatsModalOpen(false)}>
-          <div className="modal-card" onClick={(e) => e.stopPropagation()}>
-            <div className="modal-header">
-              <h2>Player Stats & Box Score</h2>
-              <button className="modal-close-btn" onClick={() => setIsStatsModalOpen(false)}>
-                ✕
-              </button>
-            </div>
-
-            <div className="modal-body">
-              {/* Team Tabs */}
-              <div className="team-tab-bar">
-                <button
-                  className={`team-tab-btn home-tab ${activeStatsTab === "home" ? "active" : ""}`}
-                  onClick={() => setActiveStatsTab("home")}
-                >
-                  {home.name} ({home.score} PTS)
-                </button>
-                <button
-                  className={`team-tab-btn away-tab ${activeStatsTab === "away" ? "active" : ""}`}
-                  onClick={() => setActiveStatsTab("away")}
-                >
-                  {away.name} ({away.score} PTS)
-                </button>
-              </div>
-
-              {/* Add New Player Form */}
-              <div className="add-player-form">
-                <input
-                  className="num-input"
-                  placeholder="# Jersey"
-                  maxLength={3}
-                  value={newPlayerNumber}
-                  onChange={(e) => setNewPlayerNumber(e.target.value)}
-                />
-                <input
-                  className="name-input"
-                  placeholder="Player Name (e.g. J. Cruz)"
-                  maxLength={24}
-                  value={newPlayerName}
-                  onChange={(e) => setNewPlayerName(e.target.value)}
-                />
-                <button className="btn-add-player" onClick={() => handleAddPlayer(activeStatsTab)}>
-                  + Add Player
-                </button>
-              </div>
-
-              {/* Player Stats Table */}
-              <table className="player-stats-table">
-                <thead>
-                  <tr>
-                    <th style={{ width: "8%" }}>#</th>
-                    <th className="left">PLAYER</th>
-                    <th style={{ width: "16%" }}>PTS</th>
-                    <th style={{ width: "16%" }}>FOULS</th>
-                    <th style={{ width: "12%" }}>REB</th>
-                    <th style={{ width: "12%" }}>AST</th>
-                    <th style={{ width: "10%" }}>STL</th>
-                    <th style={{ width: "10%" }}>BLK</th>
-                    <th style={{ width: "8%" }}></th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {currentStatsTeam.players.map((player) => (
-                    <tr key={player.id}>
-                      <td className="player-num">#{player.number}</td>
-                      <td>
-                        <div className="player-name-cell">
-                          <span>{player.name}</span>
-                          {player.fouls >= 5 && <span className="fouled-out-badge">FOULED OUT</span>}
-                          {player.fouls === 4 && <span className="foul-warning-badge-sm">4 PF</span>}
-                        </div>
-                      </td>
-
-                      {/* Points */}
-                      <td>
-                        <div className="stat-cell-wrap">
-                          <span className="stat-number">{player.pts}</span>
-                          <button
-                            className="btn-stat-inc pts"
-                            onClick={() => adjustPlayerStat(activeStatsTab, player.id, "pts", 1)}
-                            title="+1 Point"
-                          >
-                            +1
-                          </button>
-                          <button
-                            className="btn-stat-inc pts"
-                            onClick={() => adjustPlayerStat(activeStatsTab, player.id, "pts", 2)}
-                            title="+2 Points"
-                          >
-                            +2
-                          </button>
-                          <button
-                            className="btn-stat-inc pts"
-                            onClick={() => adjustPlayerStat(activeStatsTab, player.id, "pts", 3)}
-                            title="+3 Points"
-                          >
-                            +3
-                          </button>
-                        </div>
-                      </td>
-
-                      {/* Fouls */}
-                      <td>
-                        <div className="stat-cell-wrap">
-                          <span className="stat-number" style={{ color: player.fouls >= 5 ? "#ef4444" : "#fff" }}>
-                            {player.fouls}
-                          </span>
-                          <button
-                            className="btn-stat-inc foul"
-                            onClick={() => adjustPlayerStat(activeStatsTab, player.id, "fouls", 1)}
-                            title="+1 Foul"
-                          >
-                            +F
-                          </button>
-                        </div>
-                      </td>
-
-                      {/* Rebounds */}
-                      <td>
-                        <div className="stat-cell-wrap">
-                          <span className="stat-number">{player.reb}</span>
-                          <button
-                            className="btn-stat-inc"
-                            onClick={() => adjustPlayerStat(activeStatsTab, player.id, "reb", 1)}
-                          >
-                            +1
-                          </button>
-                        </div>
-                      </td>
-
-                      {/* Assists */}
-                      <td>
-                        <div className="stat-cell-wrap">
-                          <span className="stat-number">{player.ast}</span>
-                          <button
-                            className="btn-stat-inc"
-                            onClick={() => adjustPlayerStat(activeStatsTab, player.id, "ast", 1)}
-                          >
-                            +1
-                          </button>
-                        </div>
-                      </td>
-
-                      {/* Steals */}
-                      <td>
-                        <div className="stat-cell-wrap">
-                          <span className="stat-number">{player.stl}</span>
-                          <button
-                            className="btn-stat-inc"
-                            onClick={() => adjustPlayerStat(activeStatsTab, player.id, "stl", 1)}
-                          >
-                            +1
-                          </button>
-                        </div>
-                      </td>
-
-                      {/* Blocks */}
-                      <td>
-                        <div className="stat-cell-wrap">
-                          <span className="stat-number">{player.blk}</span>
-                          <button
-                            className="btn-stat-inc"
-                            onClick={() => adjustPlayerStat(activeStatsTab, player.id, "blk", 1)}
-                          >
-                            +1
-                          </button>
-                        </div>
-                      </td>
-
-                      {/* Delete */}
-                      <td>
-                        <button
-                          className="btn-stat-inc del"
-                          onClick={() => handleDeletePlayer(activeStatsTab, player.id)}
-                          title="Remove Player"
-                        >
-                          ✕
-                        </button>
-                      </td>
-                    </tr>
-                  ))}
-                  {currentStatsTeam.players.length === 0 && (
-                    <tr>
-                      <td colSpan={9} style={{ textAlign: "center", color: "#94a3b8", padding: "2rem" }}>
-                        No players added to roster yet. Use the form above to add players.
-                      </td>
-                    </tr>
-                  )}
-                </tbody>
-              </table>
-            </div>
-          </div>
-        </div>
-      )}
 
       {/* Modal: Custom Time Selector */}
       {isTimeModalOpen && (

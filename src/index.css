@@ -68,8 +68,8 @@ button, input, select {
   height: 100vh;
   max-width: 1920px;
   margin: 0 auto;
-  padding: 0.75rem 1.25rem 0.75rem;
-  gap: 0.6rem;
+  padding: 0.6rem 1rem 0.6rem;
+  gap: 0.5rem;
   overflow: hidden;
 }
 
@@ -78,10 +78,10 @@ button, input, select {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 0.5rem 1rem;
+  padding: 0.4rem 0.85rem;
   background: var(--panel-bg);
   border: 1px solid var(--panel-border);
-  border-radius: 0.85rem;
+  border-radius: 0.75rem;
   backdrop-filter: blur(16px);
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
 }
@@ -89,25 +89,25 @@ button, input, select {
 .brand-section {
   display: flex;
   align-items: center;
-  gap: 0.75rem;
+  gap: 0.6rem;
 }
 
 .logo-badge {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 2.2rem;
-  height: 2.2rem;
+  width: 2rem;
+  height: 2rem;
   background: linear-gradient(135deg, #f59e0b, #ea580c);
-  border-radius: 0.55rem;
+  border-radius: 0.5rem;
   color: #fff;
   font-weight: 900;
-  font-size: 1.1rem;
-  box-shadow: 0 0 12px rgba(245, 158, 11, 0.4);
+  font-size: 1rem;
+  box-shadow: 0 0 10px rgba(245, 158, 11, 0.4);
 }
 
 .brand-titles h1 {
-  font-size: 1.15rem;
+  font-size: 1.05rem;
   font-weight: 900;
   letter-spacing: 0.04em;
   text-transform: uppercase;
@@ -118,7 +118,7 @@ button, input, select {
 }
 
 .brand-titles p {
-  font-size: 0.68rem;
+  font-size: 0.65rem;
   font-weight: 800;
   color: #f59e0b;
   letter-spacing: 0.15em;
@@ -128,16 +128,16 @@ button, input, select {
 .header-center-info {
   display: flex;
   align-items: center;
-  gap: 0.75rem;
+  gap: 0.6rem;
 }
 
 .status-badge {
   display: inline-flex;
   align-items: center;
-  gap: 0.5rem;
-  padding: 0.35rem 0.85rem;
+  gap: 0.4rem;
+  padding: 0.3rem 0.75rem;
   border-radius: 999px;
-  font-size: 0.75rem;
+  font-size: 0.72rem;
   font-weight: 900;
   letter-spacing: 0.12em;
   text-transform: uppercase;
@@ -159,8 +159,8 @@ button, input, select {
 }
 
 .status-dot {
-  width: 0.5rem;
-  height: 0.5rem;
+  width: 0.45rem;
+  height: 0.45rem;
   border-radius: 50%;
   background: currentColor;
 }
@@ -175,12 +175,12 @@ button, input, select {
 }
 
 .lead-banner {
-  padding: 0.35rem 0.95rem;
+  padding: 0.3rem 0.85rem;
   background: rgba(250, 204, 21, 0.08);
   border: 1px solid rgba(250, 204, 21, 0.25);
   border-radius: 999px;
   color: #facc15;
-  font-size: 0.78rem;
+  font-size: 0.75rem;
   font-weight: 900;
   letter-spacing: 0.1em;
   text-transform: uppercase;
@@ -190,10 +190,10 @@ button, input, select {
 .mode-toggle-btn {
   display: inline-flex;
   align-items: center;
-  gap: 0.4rem;
-  padding: 0.35rem 0.85rem;
+  gap: 0.35rem;
+  padding: 0.3rem 0.75rem;
   border-radius: 999px;
-  font-size: 0.75rem;
+  font-size: 0.72rem;
   font-weight: 900;
   letter-spacing: 0.08em;
   text-transform: uppercase;
@@ -219,19 +219,19 @@ button, input, select {
 .header-actions {
   display: flex;
   align-items: center;
-  gap: 0.5rem;
+  gap: 0.4rem;
 }
 
 .icon-btn {
   display: inline-flex;
   align-items: center;
-  gap: 0.4rem;
-  padding: 0.42rem 0.8rem;
+  gap: 0.35rem;
+  padding: 0.35rem 0.7rem;
   background: rgba(255, 255, 255, 0.05);
   border: 1px solid rgba(255, 255, 255, 0.12);
-  border-radius: 0.6rem;
+  border-radius: 0.55rem;
   color: #e2e8f0;
-  font-size: 0.78rem;
+  font-size: 0.75rem;
   font-weight: 700;
   cursor: pointer;
   transition: all 160ms ease;
@@ -244,22 +244,11 @@ button, input, select {
   transform: translateY(-1px);
 }
 
-.icon-btn.stats-btn {
-  background: linear-gradient(135deg, rgba(245, 158, 11, 0.2), rgba(234, 88, 12, 0.2));
-  border-color: rgba(245, 158, 11, 0.4);
-  color: #fbbf24;
-}
-
-.icon-btn.stats-btn:hover {
-  background: linear-gradient(135deg, rgba(245, 158, 11, 0.35), rgba(234, 88, 12, 0.35));
-  box-shadow: 0 0 14px rgba(245, 158, 11, 0.3);
-}
-
 /* Main Arena Grid (3-Column Layout) */
 .arena-grid {
   display: grid;
-  grid-template-columns: minmax(0, 1.15fr) minmax(0, 1.25fr) minmax(0, 1.15fr);
-  gap: 0.75rem;
+  grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr) minmax(0, 1.15fr);
+  gap: 0.6rem;
   align-items: stretch;
   min-height: 0;
 }
@@ -269,10 +258,10 @@ button, input, select {
   display: flex;
   flex-direction: column;
   justify-content: space-between;
-  padding: 0.9rem;
+  padding: 0.75rem;
   background: var(--panel-bg);
   border: 1px solid var(--panel-border);
-  border-radius: 1rem;
+  border-radius: 0.9rem;
   backdrop-filter: blur(18px);
   box-shadow: 0 8px 32px var(--panel-glow);
   position: relative;
@@ -293,17 +282,17 @@ button, input, select {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 0.5rem;
-  margin-bottom: 0.4rem;
+  gap: 0.4rem;
+  margin-bottom: 0.3rem;
 }
 
 .team-tag {
-  font-size: 0.68rem;
+  font-size: 0.65rem;
   font-weight: 900;
   letter-spacing: 0.15em;
   text-transform: uppercase;
-  padding: 0.2rem 0.55rem;
-  border-radius: 0.4rem;
+  padding: 0.15rem 0.5rem;
+  border-radius: 0.35rem;
 }
 
 .home .team-tag {
@@ -318,31 +307,14 @@ button, input, select {
   border: 1px solid rgba(6, 182, 212, 0.4);
 }
 
-.roster-drawer-btn {
-  padding: 0.2rem 0.6rem;
-  background: rgba(255, 255, 255, 0.08);
-  border: 1px solid rgba(255, 255, 255, 0.15);
-  border-radius: 0.4rem;
-  color: #cbd5e1;
-  font-size: 0.72rem;
-  font-weight: 800;
-  cursor: pointer;
-  transition: all 140ms ease;
-}
-
-.roster-drawer-btn:hover {
-  background: rgba(255, 255, 255, 0.2);
-  color: #fff;
-}
-
 .team-name-input {
   width: 100%;
   background: rgba(0, 0, 0, 0.35);
   border: 1px solid rgba(255, 255, 255, 0.1);
-  border-radius: 0.6rem;
-  padding: 0.4rem 0.75rem;
+  border-radius: 0.5rem;
+  padding: 0.35rem 0.6rem;
   color: #ffffff;
-  font-size: clamp(1.2rem, 1.8vw, 1.8rem);
+  font-size: clamp(1.1rem, 1.6vw, 1.6rem);
   font-weight: 900;
   text-align: center;
   text-transform: uppercase;
@@ -365,53 +337,22 @@ button, input, select {
   box-shadow: 0 0 0 3px var(--away-glow);
 }
 
-/* Player Summary Strip on Team Card */
-.player-summary-strip {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 0.4rem;
-  padding: 0.35rem 0.65rem;
-  margin-top: 0.3rem;
-  background: rgba(0, 0, 0, 0.35);
-  border: 1px solid rgba(255, 255, 255, 0.06);
-  border-radius: 0.5rem;
-  font-size: 0.72rem;
-}
-
-.top-scorer-badge {
-  color: #facc15;
-  font-weight: 800;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.foul-warning-badge {
-  color: #ef4444;
-  font-weight: 900;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  animation: pulseShot 800ms ease-in-out infinite alternate;
-}
-
 /* Score Display Box */
 .score-box {
   display: flex;
   align-items: center;
   justify-content: center;
-  margin: 0.4rem 0;
-  padding: 0.5rem;
+  margin: 0.3rem 0;
+  padding: 0.35rem;
   background: rgba(3, 7, 18, 0.75);
   border: 1px solid rgba(255, 255, 255, 0.08);
-  border-radius: 0.85rem;
+  border-radius: 0.75rem;
   box-shadow: inset 0 2px 12px rgba(0, 0, 0, 0.6);
 }
 
 .score-number {
   font-family: var(--font-digital);
-  font-size: clamp(4.5rem, 8.5vw, 8rem);
+  font-size: clamp(3.5rem, 6.5vw, 6rem);
   font-weight: 900;
   line-height: 0.95;
   font-variant-numeric: tabular-nums;
@@ -433,8 +374,8 @@ button, input, select {
 .score-actions-grid {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
-  gap: 0.4rem;
-  margin-bottom: 0.5rem;
+  gap: 0.35rem;
+  margin-bottom: 0.4rem;
 }
 
 .btn-score {
@@ -442,13 +383,13 @@ button, input, select {
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  padding: 0.45rem 0.2rem;
-  border-radius: 0.65rem;
+  padding: 0.35rem 0.2rem;
+  border-radius: 0.55rem;
   border: 1px solid rgba(255, 255, 255, 0.12);
   background: rgba(255, 255, 255, 0.06);
   color: #fff;
   font-weight: 900;
-  font-size: 1rem;
+  font-size: 0.95rem;
   cursor: pointer;
   transition: all 120ms ease;
   box-shadow: 0 3px 8px rgba(0, 0, 0, 0.25);
@@ -483,13 +424,13 @@ button, input, select {
 
 .kbd-badge {
   font-family: monospace;
-  font-size: 0.62rem;
+  font-size: 0.58rem;
   font-weight: 800;
   opacity: 0.8;
-  margin-top: 0.15rem;
-  padding: 0.05rem 0.3rem;
+  margin-top: 0.1rem;
+  padding: 0.03rem 0.25rem;
   background: rgba(0, 0, 0, 0.4);
-  border-radius: 0.3rem;
+  border-radius: 0.25rem;
   border: 1px solid rgba(255, 255, 255, 0.15);
 }
 
@@ -497,7 +438,8 @@ button, input, select {
 .team-stats-row {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 0.5rem;
+  gap: 0.4rem;
+  margin-bottom: 0.4rem;
 }
 
 .stat-box {
@@ -505,44 +447,43 @@ button, input, select {
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  padding: 0.4rem 0.5rem;
+  padding: 0.3rem 0.4rem;
   background: rgba(0, 0, 0, 0.3);
   border: 1px solid rgba(255, 255, 255, 0.08);
-  border-radius: 0.65rem;
+  border-radius: 0.55rem;
 }
 
 .stat-box label {
-  font-size: 0.65rem;
+  font-size: 0.6rem;
   font-weight: 900;
   letter-spacing: 0.12em;
   text-transform: uppercase;
   color: #94a3b8;
-  margin-bottom: 0.1rem;
 }
 
 .stat-value {
   font-family: var(--font-digital);
-  font-size: 1.8rem;
+  font-size: 1.5rem;
   font-weight: 800;
   line-height: 1;
   color: #ffffff;
-  margin-bottom: 0.25rem;
+  margin: 0.1rem 0;
 }
 
 .stat-controls {
   display: flex;
-  gap: 0.3rem;
+  gap: 0.25rem;
   width: 100%;
 }
 
 .btn-mini {
   flex: 1;
-  padding: 0.25rem 0.2rem;
+  padding: 0.2rem 0.15rem;
   background: rgba(255, 255, 255, 0.08);
   border: 1px solid rgba(255, 255, 255, 0.12);
-  border-radius: 0.45rem;
+  border-radius: 0.35rem;
   color: #fff;
-  font-size: 0.75rem;
+  font-size: 0.72rem;
   font-weight: 800;
   cursor: pointer;
   transition: all 120ms ease;
@@ -553,6 +494,218 @@ button, input, select {
 
 .btn-mini:hover {
   background: rgba(255, 255, 255, 0.2);
+}
+
+/* ========================================================= */
+/* WHITE PAPER STYLE PLAYER STATS SCOREKEEPER SHEET (embedded) */
+/* ========================================================= */
+.paper-score-sheet {
+  background: #ffffff;
+  color: #0f172a;
+  border: 2px solid #cbd5e1;
+  border-radius: 0.75rem;
+  padding: 0.5rem;
+  box-shadow: 0 4px 18px rgba(0, 0, 0, 0.4), inset 0 0 10px rgba(0, 0, 0, 0.03);
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+}
+
+.paper-sheet-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-bottom: 2px solid #0f172a;
+  padding-bottom: 0.3rem;
+}
+
+.paper-sheet-title {
+  font-size: 0.75rem;
+  font-weight: 900;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: #0f172a;
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.paper-add-player-row {
+  display: flex;
+  gap: 0.25rem;
+}
+
+.paper-input {
+  background: #f8fafc !important;
+  color: #0f172a !important;
+  border: 1px solid #94a3b8 !important;
+  border-radius: 0.35rem !important;
+  padding: 0.2rem 0.4rem !important;
+  font-size: 0.72rem !important;
+  font-weight: 800 !important;
+}
+
+.paper-input.num-input {
+  width: 2.8rem;
+  text-align: center;
+  font-family: var(--font-digital);
+}
+
+.paper-input.name-input {
+  flex: 1;
+}
+
+.btn-paper-add {
+  padding: 0.2rem 0.55rem;
+  background: #16a34a;
+  border: 1px solid #15803d;
+  border-radius: 0.35rem;
+  color: #ffffff;
+  font-weight: 900;
+  font-size: 0.7rem;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.btn-paper-add:hover {
+  background: #15803d;
+}
+
+.paper-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.72rem;
+}
+
+.paper-table th {
+  background: #f1f5f9;
+  color: #1e293b;
+  font-weight: 900;
+  text-transform: uppercase;
+  font-size: 0.62rem;
+  letter-spacing: 0.05em;
+  padding: 0.3rem 0.25rem;
+  border-bottom: 2px solid #cbd5e1;
+  text-align: center;
+}
+
+.paper-table th.left {
+  text-align: left;
+}
+
+.paper-table td {
+  padding: 0.3rem 0.2rem;
+  border-bottom: 1px solid #e2e8f0;
+  color: #0f172a;
+  text-align: center;
+  vertical-align: middle;
+  font-weight: 700;
+}
+
+.paper-table tr:nth-child(even) {
+  background: #f8fafc;
+}
+
+.paper-table tr:hover {
+  background: #f1f5f9;
+}
+
+.paper-player-num {
+  font-family: var(--font-digital);
+  font-weight: 900;
+  color: #d97706;
+}
+
+.paper-player-name {
+  font-weight: 800;
+  color: #0f172a;
+  text-align: left;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 90px;
+}
+
+.paper-stat-badge {
+  font-family: var(--font-digital);
+  font-weight: 900;
+  font-size: 0.85rem;
+  color: #0f172a;
+}
+
+.paper-btn-group {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.15rem;
+}
+
+.btn-paper-act {
+  padding: 0.15rem 0.35rem;
+  border-radius: 0.3rem;
+  font-weight: 900;
+  font-size: 0.65rem;
+  cursor: pointer;
+  border: 1px solid transparent;
+  transition: all 100ms ease;
+}
+
+.btn-paper-act.pt1 {
+  background: #fef3c7;
+  color: #92400e;
+  border-color: #fcd34d;
+}
+.btn-paper-act.pt1:hover { background: #fde68a; }
+
+.btn-paper-act.pt2 {
+  background: #fde68a;
+  color: #78350f;
+  border-color: #f59e0b;
+}
+.btn-paper-act.pt2:hover { background: #f59e0b; color: #fff; }
+
+.btn-paper-act.pt3 {
+  background: #f59e0b;
+  color: #ffffff;
+  border-color: #d97706;
+}
+.btn-paper-act.pt3:hover { background: #d97706; }
+
+.btn-paper-act.foul {
+  background: #fee2e2;
+  color: #991b1b;
+  border-color: #fca5a5;
+}
+.btn-paper-act.foul:hover { background: #fca5a5; color: #7f1d1d; }
+
+.btn-paper-act.del {
+  background: #f1f5f9;
+  color: #64748b;
+  border-color: #cbd5e1;
+}
+.btn-paper-act.del:hover { background: #ef4444; color: #fff; border-color: #dc2626; }
+
+.paper-foul-out {
+  color: #dc2626;
+  font-weight: 900;
+  font-size: 0.6rem;
+  background: #fee2e2;
+  border: 1px solid #fca5a5;
+  padding: 0.05rem 0.25rem;
+  border-radius: 0.25rem;
+}
+
+.paper-foul-warn {
+  color: #d97706;
+  font-weight: 900;
+  font-size: 0.6rem;
+  background: #fef3c7;
+  border: 1px solid #fcd34d;
+  padding: 0.05rem 0.25rem;
+  border-radius: 0.25rem;
 }
 
 /* Central Arena Column (Game Clock, Shot Clock, Quarter) */
@@ -571,12 +724,12 @@ button, input, select {
   padding: 0.45rem 0.75rem;
   background: var(--panel-bg);
   border: 1px solid var(--panel-border);
-  border-radius: 0.85rem;
+  border-radius: 0.75rem;
   backdrop-filter: blur(16px);
 }
 
 .quarter-title {
-  font-size: 0.72rem;
+  font-size: 0.7rem;
   font-weight: 900;
   letter-spacing: 0.15em;
   text-transform: uppercase;
@@ -617,10 +770,10 @@ button, input, select {
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  padding: 0.8rem 1rem;
+  padding: 0.75rem 0.85rem;
   background: var(--panel-bg);
   border: 1px solid var(--panel-border);
-  border-radius: 1rem;
+  border-radius: 0.9rem;
   backdrop-filter: blur(18px);
   box-shadow: 0 8px 32px var(--panel-glow);
   text-align: center;
@@ -631,11 +784,11 @@ button, input, select {
 .clock-header-row {
   display: flex;
   align-items: center;
-  gap: 0.6rem;
+  gap: 0.5rem;
 }
 
 .clock-label {
-  font-size: 0.72rem;
+  font-size: 0.7rem;
   font-weight: 900;
   letter-spacing: 0.18em;
   text-transform: uppercase;
@@ -643,14 +796,14 @@ button, input, select {
 }
 
 .running-time-tag {
-  font-size: 0.65rem;
+  font-size: 0.62rem;
   font-weight: 900;
   letter-spacing: 0.1em;
   text-transform: uppercase;
   color: #e879f9;
   background: rgba(217, 70, 239, 0.15);
   border: 1px solid rgba(217, 70, 239, 0.4);
-  padding: 0.15rem 0.5rem;
+  padding: 0.12rem 0.45rem;
   border-radius: 999px;
   animation: pulseGlow 1.5s ease-in-out infinite alternate;
 }
@@ -662,7 +815,7 @@ button, input, select {
 
 .game-clock-display {
   font-family: var(--font-digital);
-  font-size: clamp(4rem, 7vw, 6.8rem);
+  font-size: clamp(3.8rem, 6.5vw, 6.2rem);
   font-weight: 900;
   line-height: 0.95;
   color: var(--clock-primary);
@@ -686,10 +839,10 @@ button, input, select {
 
 .clock-main-controls {
   display: flex;
-  gap: 0.5rem;
-  margin-top: 0.5rem;
+  gap: 0.45rem;
+  margin-top: 0.4rem;
   width: 100%;
-  max-width: 380px;
+  max-width: 360px;
 }
 
 .btn-clock {
@@ -698,12 +851,12 @@ button, input, select {
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  padding: 0.55rem 0.5rem;
-  border-radius: 0.65rem;
+  padding: 0.5rem 0.45rem;
+  border-radius: 0.6rem;
   border: 1px solid rgba(255, 255, 255, 0.15);
   background: rgba(255, 255, 255, 0.08);
   color: #fff;
-  font-size: 0.9rem;
+  font-size: 0.85rem;
   font-weight: 900;
   cursor: pointer;
   transition: all 140ms ease;
@@ -736,29 +889,29 @@ button, input, select {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 0.6rem 1rem;
+  padding: 0.5rem 0.85rem;
   background: var(--panel-bg);
   border: 1px solid var(--panel-border);
-  border-radius: 0.85rem;
+  border-radius: 0.75rem;
   backdrop-filter: blur(16px);
 }
 
 .shot-clock-display-wrap {
   display: flex;
   align-items: center;
-  gap: 0.75rem;
+  gap: 0.6rem;
 }
 
 .shot-clock-number {
   font-family: var(--font-digital);
-  font-size: 2.8rem;
+  font-size: 2.5rem;
   font-weight: 900;
   line-height: 1;
   color: var(--shot-primary);
   text-shadow: 0 0 20px var(--shot-glow);
   font-variant-numeric: tabular-nums;
   user-select: none;
-  min-width: 3.5rem;
+  min-width: 3.2rem;
   text-align: center;
 }
 
@@ -773,16 +926,16 @@ button, input, select {
 
 .shot-clock-actions {
   display: flex;
-  gap: 0.35rem;
+  gap: 0.3rem;
 }
 
 .btn-shot {
-  padding: 0.4rem 0.75rem;
+  padding: 0.35rem 0.65rem;
   background: rgba(255, 255, 255, 0.08);
   border: 1px solid rgba(255, 255, 255, 0.12);
-  border-radius: 0.55rem;
+  border-radius: 0.5rem;
   color: #fff;
-  font-size: 0.82rem;
+  font-size: 0.78rem;
   font-weight: 800;
   cursor: pointer;
   transition: all 120ms ease;
@@ -797,12 +950,12 @@ button, input, select {
 .arena-footer-desk {
   display: grid;
   grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr) minmax(0, 1.2fr);
-  gap: 0.75rem;
+  gap: 0.6rem;
   align-items: center;
-  padding: 0.55rem 0.85rem;
+  padding: 0.5rem 0.75rem;
   background: var(--panel-bg);
   border: 1px solid var(--panel-border);
-  border-radius: 0.85rem;
+  border-radius: 0.75rem;
   backdrop-filter: blur(16px);
 }
 
@@ -812,13 +965,13 @@ button, input, select {
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 0.75rem;
-  padding: 0.65rem 1rem;
+  gap: 0.6rem;
+  padding: 0.55rem 0.85rem;
   background: linear-gradient(135deg, #ef4444, #b91c1c);
   border: 1px solid rgba(248, 113, 113, 0.5);
-  border-radius: 0.75rem;
+  border-radius: 0.65rem;
   color: #ffffff;
-  font-size: 1.05rem;
+  font-size: 0.98rem;
   font-weight: 900;
   letter-spacing: 0.08em;
   text-transform: uppercase;
@@ -850,24 +1003,24 @@ button, input, select {
   background: rgba(0, 0, 0, 0.35);
   border: 1px solid rgba(255, 255, 255, 0.3);
   color: #fff;
-  padding: 0.15rem 0.5rem;
-  border-radius: 0.4rem;
-  font-size: 0.75rem;
+  padding: 0.12rem 0.45rem;
+  border-radius: 0.35rem;
+  font-size: 0.72rem;
 }
 
 .quick-actions-bar {
   display: flex;
-  gap: 0.4rem;
+  gap: 0.35rem;
 }
 
 .btn-desk-action {
   flex: 1;
-  padding: 0.5rem 0.5rem;
+  padding: 0.45rem 0.4rem;
   background: rgba(255, 255, 255, 0.06);
   border: 1px solid rgba(255, 255, 255, 0.12);
-  border-radius: 0.6rem;
+  border-radius: 0.55rem;
   color: #cbd5e1;
-  font-size: 0.78rem;
+  font-size: 0.75rem;
   font-weight: 800;
   cursor: pointer;
   transition: all 140ms ease;
@@ -875,7 +1028,7 @@ button, input, select {
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 0.15rem;
+  gap: 0.12rem;
 }
 
 .btn-desk-action:hover {
@@ -914,8 +1067,8 @@ button, input, select {
 }
 
 .modal-card {
-  width: min(920px, 96vw);
-  max-height: 88vh;
+  width: min(720px, 95vw);
+  max-height: 85vh;
   background: #0f172a;
   border: 1px solid rgba(255, 255, 255, 0.15);
   border-radius: 1.25rem;
@@ -929,13 +1082,13 @@ button, input, select {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 1rem 1.25rem;
+  padding: 0.85rem 1.1rem;
   border-bottom: 1px solid rgba(255, 255, 255, 0.1);
   background: rgba(255, 255, 255, 0.03);
 }
 
 .modal-header h2 {
-  font-size: 1.1rem;
+  font-size: 1rem;
   font-weight: 900;
   letter-spacing: 0.04em;
   text-transform: uppercase;
@@ -946,8 +1099,8 @@ button, input, select {
   background: rgba(255, 255, 255, 0.08);
   border: 1px solid rgba(255, 255, 255, 0.15);
   color: #cbd5e1;
-  width: 2rem;
-  height: 2rem;
+  width: 1.8rem;
+  height: 1.8rem;
   border-radius: 50%;
   font-weight: 900;
   cursor: pointer;
@@ -962,231 +1115,26 @@ button, input, select {
 }
 
 .modal-body {
-  padding: 1.25rem;
+  padding: 1.1rem;
   overflow-y: auto;
-}
-
-/* Player Stats Tracker Modal Styles */
-.team-tab-bar {
-  display: flex;
-  gap: 0.5rem;
-  margin-bottom: 1rem;
-}
-
-.team-tab-btn {
-  flex: 1;
-  padding: 0.65rem 1rem;
-  background: rgba(255, 255, 255, 0.05);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  border-radius: 0.65rem;
-  color: #cbd5e1;
-  font-weight: 900;
-  font-size: 0.9rem;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  cursor: pointer;
-  transition: all 160ms ease;
-}
-
-.team-tab-btn.home-tab.active {
-  background: linear-gradient(135deg, rgba(245, 158, 11, 0.3), rgba(217, 119, 6, 0.3));
-  border-color: #f59e0b;
-  color: #fbbf24;
-  box-shadow: 0 0 15px rgba(245, 158, 11, 0.25);
-}
-
-.team-tab-btn.away-tab.active {
-  background: linear-gradient(135deg, rgba(6, 182, 212, 0.3), rgba(2, 132, 199, 0.3));
-  border-color: #06b6d4;
-  color: #38bdf8;
-  box-shadow: 0 0 15px rgba(6, 182, 212, 0.25);
-}
-
-.add-player-form {
-  display: flex;
-  gap: 0.5rem;
-  margin-bottom: 1rem;
-  background: rgba(0, 0, 0, 0.3);
-  padding: 0.65rem;
-  border-radius: 0.75rem;
-  border: 1px solid rgba(255, 255, 255, 0.08);
-}
-
-.add-player-form input {
-  background: rgba(15, 23, 42, 0.8);
-  border: 1px solid rgba(255, 255, 255, 0.15);
-  border-radius: 0.5rem;
-  padding: 0.45rem 0.75rem;
-  color: #fff;
-  font-weight: 700;
-  font-size: 0.85rem;
-}
-
-.add-player-form input.num-input {
-  width: 5rem;
-  text-align: center;
-  font-family: var(--font-digital);
-}
-
-.add-player-form input.name-input {
-  flex: 1;
-}
-
-.btn-add-player {
-  padding: 0.45rem 1rem;
-  background: linear-gradient(135deg, #22c55e, #16a34a);
-  border: 1px solid rgba(34, 197, 94, 0.4);
-  border-radius: 0.5rem;
-  color: #fff;
-  font-weight: 900;
-  font-size: 0.82rem;
-  cursor: pointer;
-  transition: all 140ms ease;
-  white-space: nowrap;
-}
-
-.btn-add-player:hover {
-  filter: brightness(1.15);
-}
-
-.player-stats-table {
-  width: 100%;
-  border-collapse: collapse;
-  font-size: 0.82rem;
-}
-
-.player-stats-table th {
-  padding: 0.6rem 0.5rem;
-  background: rgba(0, 0, 0, 0.4);
-  color: #94a3b8;
-  font-weight: 900;
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
-  font-size: 0.7rem;
-  text-align: center;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-}
-
-.player-stats-table th.left {
-  text-align: left;
-}
-
-.player-stats-table td {
-  padding: 0.5rem 0.4rem;
-  text-align: center;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
-  vertical-align: middle;
-}
-
-.player-stats-table tr:hover {
-  background: rgba(255, 255, 255, 0.03);
-}
-
-.player-num {
-  font-family: var(--font-digital);
-  font-weight: 900;
-  font-size: 0.95rem;
-  color: #facc15;
-}
-
-.player-name-cell {
-  font-weight: 800;
-  color: #f8fafc;
-  text-align: left;
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-}
-
-.fouled-out-badge {
-  font-size: 0.62rem;
-  font-weight: 900;
-  padding: 0.1rem 0.4rem;
-  border-radius: 0.3rem;
-  background: rgba(239, 68, 68, 0.25);
-  border: 1px solid rgba(239, 68, 68, 0.5);
-  color: #fca5a5;
-  animation: pulseShot 500ms ease-in-out infinite alternate;
-}
-
-.foul-warning-badge-sm {
-  font-size: 0.62rem;
-  font-weight: 900;
-  padding: 0.1rem 0.4rem;
-  border-radius: 0.3rem;
-  background: rgba(245, 158, 11, 0.2);
-  border: 1px solid rgba(245, 158, 11, 0.4);
-  color: #fbbf24;
-}
-
-.stat-number {
-  font-family: var(--font-digital);
-  font-weight: 900;
-  font-size: 1.1rem;
-}
-
-.stat-cell-wrap {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 0.25rem;
-}
-
-.btn-stat-inc {
-  padding: 0.2rem 0.45rem;
-  background: rgba(255, 255, 255, 0.08);
-  border: 1px solid rgba(255, 255, 255, 0.15);
-  border-radius: 0.35rem;
-  color: #fff;
-  font-weight: 800;
-  font-size: 0.72rem;
-  cursor: pointer;
-  transition: all 100ms ease;
-}
-
-.btn-stat-inc:hover {
-  background: rgba(255, 255, 255, 0.25);
-}
-
-.btn-stat-inc.pts {
-  background: rgba(245, 158, 11, 0.2);
-  border-color: rgba(245, 158, 11, 0.4);
-  color: #fbbf24;
-}
-
-.btn-stat-inc.foul {
-  background: rgba(239, 68, 68, 0.2);
-  border-color: rgba(239, 68, 68, 0.4);
-  color: #fca5a5;
-}
-
-.btn-stat-inc.del {
-  background: rgba(255, 255, 255, 0.05);
-  border-color: rgba(255, 255, 255, 0.1);
-  color: #94a3b8;
-}
-
-.btn-stat-inc.del:hover {
-  background: rgba(239, 68, 68, 0.3);
-  color: #fff;
 }
 
 /* Custom Clock Modal Inputs */
 .preset-time-row {
   display: flex;
-  gap: 0.5rem;
-  margin-bottom: 1.25rem;
+  gap: 0.45rem;
+  margin-bottom: 1rem;
 }
 
 .preset-time-btn {
   flex: 1;
-  padding: 0.6rem 0.5rem;
+  padding: 0.55rem 0.45rem;
   background: rgba(255, 255, 255, 0.06);
   border: 1px solid rgba(255, 255, 255, 0.12);
-  border-radius: 0.6rem;
+  border-radius: 0.55rem;
   color: #fff;
   font-weight: 800;
-  font-size: 0.88rem;
+  font-size: 0.85rem;
   cursor: pointer;
   transition: all 140ms ease;
 }
@@ -1200,19 +1148,19 @@ button, input, select {
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 1rem;
-  margin-bottom: 1.25rem;
+  gap: 0.85rem;
+  margin-bottom: 1rem;
 }
 
 .time-field {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 0.4rem;
+  gap: 0.35rem;
 }
 
 .time-field label {
-  font-size: 0.72rem;
+  font-size: 0.7rem;
   font-weight: 900;
   letter-spacing: 0.12em;
   text-transform: uppercase;
@@ -1220,74 +1168,74 @@ button, input, select {
 }
 
 .time-field input {
-  width: 5.5rem;
+  width: 5rem;
   font-family: var(--font-digital);
-  font-size: 2.2rem;
+  font-size: 2rem;
   font-weight: 900;
   text-align: center;
   background: rgba(0, 0, 0, 0.4);
   border: 1px solid rgba(255, 255, 255, 0.2);
-  border-radius: 0.75rem;
+  border-radius: 0.65rem;
   color: #facc15;
-  padding: 0.4rem;
+  padding: 0.35rem;
 }
 
 .time-colon {
   font-family: var(--font-digital);
-  font-size: 2.5rem;
+  font-size: 2.2rem;
   font-weight: 900;
   color: #94a3b8;
-  margin-top: 1rem;
+  margin-top: 0.8rem;
 }
 
 /* Hotkey Settings Modal */
 .hotkey-notice-bar {
-  padding: 0.75rem 1rem;
+  padding: 0.65rem 0.85rem;
   background: rgba(245, 158, 11, 0.1);
   border: 1px solid rgba(245, 158, 11, 0.25);
-  border-radius: 0.75rem;
+  border-radius: 0.65rem;
   color: #fbbf24;
-  font-size: 0.82rem;
+  font-size: 0.8rem;
   font-weight: 700;
-  margin-bottom: 1rem;
+  margin-bottom: 0.85rem;
   display: flex;
   align-items: center;
   justify-content: space-between;
 }
 
 .hotkey-category-section {
-  margin-bottom: 1.25rem;
+  margin-bottom: 1rem;
 }
 
 .hotkey-category-section h3 {
-  font-size: 0.8rem;
+  font-size: 0.75rem;
   font-weight: 900;
   letter-spacing: 0.15em;
   text-transform: uppercase;
   color: #f59e0b;
-  margin-bottom: 0.6rem;
-  padding-bottom: 0.3rem;
+  margin-bottom: 0.5rem;
+  padding-bottom: 0.25rem;
   border-bottom: 1px solid rgba(255, 255, 255, 0.08);
 }
 
 .hotkey-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-  gap: 0.5rem;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 0.45rem;
 }
 
 .hotkey-row-card {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 0.5rem 0.75rem;
+  padding: 0.45rem 0.65rem;
   background: rgba(255, 255, 255, 0.04);
   border: 1px solid rgba(255, 255, 255, 0.08);
-  border-radius: 0.6rem;
+  border-radius: 0.55rem;
 }
 
 .hotkey-row-card span {
-  font-size: 0.82rem;
+  font-size: 0.8rem;
   font-weight: 700;
   color: #e2e8f0;
 }
@@ -1295,16 +1243,16 @@ button, input, select {
 .hotkey-row-card .actions {
   display: flex;
   align-items: center;
-  gap: 0.4rem;
+  gap: 0.35rem;
 }
 
 .btn-rebind {
-  padding: 0.3rem 0.6rem;
+  padding: 0.25rem 0.5rem;
   background: rgba(255, 255, 255, 0.08);
   border: 1px solid rgba(255, 255, 255, 0.15);
-  border-radius: 0.45rem;
+  border-radius: 0.4rem;
   color: #fff;
-  font-size: 0.75rem;
+  font-size: 0.72rem;
   font-weight: 800;
   cursor: pointer;
 }
@@ -1316,7 +1264,7 @@ button, input, select {
 }
 
 /* Fallback Responsive adjustment for small monitors or mobile */
-@media (max-height: 720px), (max-width: 1024px) {
+@media (max-height: 780px), (max-width: 1024px) {
   html, body {
     overflow-y: auto;
     height: auto;
