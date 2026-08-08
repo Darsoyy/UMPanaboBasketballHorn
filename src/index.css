@@ -128,7 +128,7 @@ button, input, select {
 .header-center-info {
   display: flex;
   align-items: center;
-  gap: 1rem;
+  gap: 0.75rem;
 }
 
 .status-badge {
@@ -187,6 +187,36 @@ button, input, select {
   box-shadow: 0 0 12px rgba(250, 204, 21, 0.15);
 }
 
+/* Running Time Mode Toggle Button */
+.mode-toggle-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.35rem 0.85rem;
+  border-radius: 999px;
+  font-size: 0.75rem;
+  font-weight: 900;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  cursor: pointer;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  background: rgba(255, 255, 255, 0.06);
+  color: #cbd5e1;
+  transition: all 180ms ease;
+}
+
+.mode-toggle-btn:hover {
+  background: rgba(255, 255, 255, 0.14);
+  color: #fff;
+}
+
+.mode-toggle-btn.running-active {
+  background: linear-gradient(135deg, rgba(168, 85, 247, 0.3), rgba(236, 72, 153, 0.3));
+  border-color: rgba(216, 180, 254, 0.6);
+  color: #f0abfc;
+  box-shadow: 0 0 15px rgba(216, 180, 254, 0.3);
+}
+
 .header-actions {
   display: flex;
   align-items: center;
@@ -221,7 +251,7 @@ button, input, select {
   grid-template-columns: minmax(0, 1.15fr) minmax(0, 1.25fr) minmax(0, 1.15fr);
   gap: 0.75rem;
   align-items: stretch;
-  min-height: 0; /* Prevents overflow inside grid container */
+  min-height: 0;
 }
 
 /* Team Card styling */
@@ -537,6 +567,13 @@ button, input, select {
   box-shadow: 0 8px 32px var(--panel-glow);
   text-align: center;
   flex: 1;
+  position: relative;
+}
+
+.clock-header-row {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
 }
 
 .clock-label {
@@ -545,7 +582,24 @@ button, input, select {
   letter-spacing: 0.18em;
   text-transform: uppercase;
   color: #94a3b8;
-  margin-bottom: 0.2rem;
+}
+
+.running-time-tag {
+  font-size: 0.65rem;
+  font-weight: 900;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: #e879f9;
+  background: rgba(217, 70, 239, 0.15);
+  border: 1px solid rgba(217, 70, 239, 0.4);
+  padding: 0.15rem 0.5rem;
+  border-radius: 999px;
+  animation: pulseGlow 1.5s ease-in-out infinite alternate;
+}
+
+@keyframes pulseGlow {
+  from { box-shadow: 0 0 4px rgba(217, 70, 239, 0.2); }
+  to { box-shadow: 0 0 14px rgba(217, 70, 239, 0.6); }
 }
 
 .game-clock-display {

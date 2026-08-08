@@ -1,6 +1,6 @@
 import { type ReactNode, useCallback, useEffect, useMemo, useRef, useState } from "react";
 
-const DEFAULT_GAME_SECONDS = 12 * 60;
+const DEFAULT_GAME_SECONDS = 8 * 60; // 8 minutes default
 const DEFAULT_SHOT_SECONDS = 24;
 const DEFAULT_TIMEOUTS = 5;
 const HOTKEY_STORAGE_KEY = "basketball-scoreboard-hotkeys-v5";
@@ -12,6 +12,7 @@ const ACTION_DEFINITIONS = [
   { id: "clockStart", label: "Start Clock", category: "Game Clock" },
   { id: "clockPause", label: "Pause Clock", category: "Game Clock" },
   { id: "clockReset", label: "Reset Game Clock", category: "Game Clock" },
+  { id: "toggleRunningTime", label: "Toggle Running Time", category: "Game Clock" },
   { id: "shot24", label: "Shot Clock 24", category: "Shot Clock" },
   { id: "shot14", label: "Shot Clock 14", category: "Shot Clock" },
   { id: "shot0", label: "Shot Clock 0", category: "Shot Clock" },
@@ -71,6 +72,7 @@ const DEFAULT_HOTKEYS: HotkeyMap = {
   clockStart: "Enter",
   clockPause: "KeyP",
   clockReset: "Ctrl+KeyR",
+  toggleRunningTime: "KeyT",
   shot24: "KeyZ",
   shot14: "KeyX",
   shot0: "KeyC",
@@ -220,11 +222,12 @@ function App() {
   const [gameSeconds, setGameSeconds] = useState(DEFAULT_GAME_SECONDS);
   const [shotSeconds, setShotSeconds] = useState(DEFAULT_SHOT_SECONDS);
   const [isRunning, setIsRunning] = useState(false);
+  const [isRunningTimeMode, setIsRunningTimeMode] = useState(false); // Running Time Mode
 
   // Modals & Popovers
   const [isTimeModalOpen, setIsTimeModalOpen] = useState(false);
   const [isHotkeyModalOpen, setIsHotkeyModalOpen] = useState(false);
-  const [customMinutes, setCustomMinutes] = useState("12");
+  const [customMinutes, setCustomMinutes] = useState("8");
   const [customSeconds, setCustomSeconds] = useState("00");
 
   const [isHornActive, setIsHornActive] = useState(false);
@@ -329,7 +332,7 @@ function App() {
       try {
         oscillator.stop(now + 0.08);
       } catch {
-        // Ignore if stopped
+        // Ignore
       }
     });
 
@@ -417,6 +420,13 @@ function App() {
     window.localStorage.setItem(HOTKEY_STORAGE_KEY, JSON.stringify(hotkeys));
   }, [hotkeys]);
 
+  // Helper to auto-resume clock in Running Time mode if gameSeconds > 0
+  const checkRunningTimeResume = useCallback(() => {
+    if (isRunningTimeMode && gameSeconds > 0) {
+      setIsRunning(true);
+    }
+  }, [gameSeconds, isRunningTimeMode]);
+
   const updateTeam = useCallback((side: TeamSide, updater: (team: Team) => Team) => {
     if (side === "home") {
       setHome((team) => updater(team));
@@ -441,8 +451,9 @@ function App() {
         ...team,
         score: Math.max(0, team.score + amount),
       }));
+      checkRunningTimeResume();
     },
-    [updateTeam]
+    [checkRunningTimeResume, updateTeam]
   );
 
   const adjustFouls = useCallback(
@@ -451,8 +462,9 @@ function App() {
         ...team,
         fouls: Math.max(0, team.fouls + amount),
       }));
+      checkRunningTimeResume();
     },
-    [updateTeam]
+    [checkRunningTimeResume, updateTeam]
   );
 
   const adjustTimeouts = useCallback(
@@ -468,7 +480,7 @@ function App() {
   const resetGameClock = useCallback(() => {
     setIsRunning(false);
     setGameSeconds(DEFAULT_GAME_SECONDS);
-    setCustomMinutes("12");
+    setCustomMinutes("8");
     setCustomSeconds("00");
   }, []);
 
@@ -484,8 +496,12 @@ function App() {
       setCustomMinutes(minutes.toString());
       setCustomSeconds(seconds.toString().padStart(2, "0"));
       setIsTimeModalOpen(false);
+
+      if (isRunningTimeMode && minutes * 60 + seconds > 0) {
+        setIsRunning(true);
+      }
     },
-    [customMinutes, customSeconds]
+    [customMinutes, customSeconds, isRunningTimeMode]
   );
 
   const endQuarter = useCallback(() => {
@@ -505,7 +521,7 @@ function App() {
     setQuarter(1);
     setGameSeconds(DEFAULT_GAME_SECONDS);
     setShotSeconds(DEFAULT_SHOT_SECONDS);
-    setCustomMinutes("12");
+    setCustomMinutes("8");
     setCustomSeconds("00");
     stopHorn();
   }, [stopHorn]);
@@ -527,6 +543,9 @@ function App() {
           break;
         case "clockReset":
           resetGameClock();
+          break;
+        case "toggleRunningTime":
+          setIsRunningTimeMode((prev) => !prev);
           break;
         case "shot24":
           setShotSeconds(24);
@@ -905,6 +924,14 @@ function App() {
             {isRunning ? "LIVE" : "PAUSED"}
           </div>
 
+          <button
+            className={`mode-toggle-btn ${isRunningTimeMode ? "running-active" : ""}`}
+            onClick={() => setIsRunningTimeMode((prev) => !prev)}
+            title="Toggle Clock Mode (Stop Clock vs Running Time)"
+          >
+            {isRunningTimeMode ? "⚡ RUNNING TIME" : "⏹ STOP CLOCK MODE"}
+          </button>
+
           <div className="lead-banner">{leadingTeam}</div>
         </div>
 
@@ -952,7 +979,11 @@ function App() {
 
           {/* Main Game Clock Card */}
           <div className="main-clock-box">
-            <span className="clock-label">GAME CLOCK</span>
+            <div className="clock-header-row">
+              <span className="clock-label">GAME CLOCK</span>
+              {isRunningTimeMode && <span className="running-time-tag">⚡ RUNNING TIME</span>}
+            </div>
+
             <div className={`game-clock-display ${gameSeconds <= 10 && gameSeconds > 0 ? "critical" : ""}`}>
               {formatClock(gameSeconds)}
             </div>
@@ -974,7 +1005,7 @@ function App() {
                 </button>
               )}
               <button className="btn-clock" onClick={resetGameClock}>
-                RESET
+                RESET (8m)
               </button>
             </div>
           </div>
@@ -1069,13 +1100,13 @@ function App() {
                   10:00
                 </button>
                 <button className="preset-time-btn" onClick={() => applyCustomTime("8", "00")}>
-                  8:00
+                  8:00 (Default)
                 </button>
                 <button className="preset-time-btn" onClick={() => applyCustomTime("5", "00")}>
                   5:00
                 </button>
-                <button className="preset-time-btn" onClick={() => applyCustomTime("2", "00")}>
-                  2:00
+                <button className="preset-time-btn" onClick={() => applyCustomTime("3", "00")}>
+                  3:00
                 </button>
               </div>
 
