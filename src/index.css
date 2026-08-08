@@ -187,7 +187,6 @@ button, input, select {
   box-shadow: 0 0 12px rgba(250, 204, 21, 0.15);
 }
 
-/* Running Time Mode Toggle Button */
 .mode-toggle-btn {
   display: inline-flex;
   align-items: center;
@@ -243,6 +242,17 @@ button, input, select {
   border-color: rgba(255, 255, 255, 0.25);
   color: #fff;
   transform: translateY(-1px);
+}
+
+.icon-btn.stats-btn {
+  background: linear-gradient(135deg, rgba(245, 158, 11, 0.2), rgba(234, 88, 12, 0.2));
+  border-color: rgba(245, 158, 11, 0.4);
+  color: #fbbf24;
+}
+
+.icon-btn.stats-btn:hover {
+  background: linear-gradient(135deg, rgba(245, 158, 11, 0.35), rgba(234, 88, 12, 0.35));
+  box-shadow: 0 0 14px rgba(245, 158, 11, 0.3);
 }
 
 /* Main Arena Grid (3-Column Layout) */
@@ -308,6 +318,23 @@ button, input, select {
   border: 1px solid rgba(6, 182, 212, 0.4);
 }
 
+.roster-drawer-btn {
+  padding: 0.2rem 0.6rem;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 0.4rem;
+  color: #cbd5e1;
+  font-size: 0.72rem;
+  font-weight: 800;
+  cursor: pointer;
+  transition: all 140ms ease;
+}
+
+.roster-drawer-btn:hover {
+  background: rgba(255, 255, 255, 0.2);
+  color: #fff;
+}
+
 .team-name-input {
   width: 100%;
   background: rgba(0, 0, 0, 0.35);
@@ -336,6 +363,37 @@ button, input, select {
 .away .team-name-input:focus {
   border-color: var(--away-primary);
   box-shadow: 0 0 0 3px var(--away-glow);
+}
+
+/* Player Summary Strip on Team Card */
+.player-summary-strip {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.4rem;
+  padding: 0.35rem 0.65rem;
+  margin-top: 0.3rem;
+  background: rgba(0, 0, 0, 0.35);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 0.5rem;
+  font-size: 0.72rem;
+}
+
+.top-scorer-badge {
+  color: #facc15;
+  font-weight: 800;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.foul-warning-badge {
+  color: #ef4444;
+  font-weight: 900;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  animation: pulseShot 800ms ease-in-out infinite alternate;
 }
 
 /* Score Display Box */
@@ -856,8 +914,8 @@ button, input, select {
 }
 
 .modal-card {
-  width: min(720px, 95vw);
-  max-height: 85vh;
+  width: min(920px, 96vw);
+  max-height: 88vh;
   background: #0f172a;
   border: 1px solid rgba(255, 255, 255, 0.15);
   border-radius: 1.25rem;
@@ -906,6 +964,211 @@ button, input, select {
 .modal-body {
   padding: 1.25rem;
   overflow-y: auto;
+}
+
+/* Player Stats Tracker Modal Styles */
+.team-tab-bar {
+  display: flex;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+}
+
+.team-tab-btn {
+  flex: 1;
+  padding: 0.65rem 1rem;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 0.65rem;
+  color: #cbd5e1;
+  font-weight: 900;
+  font-size: 0.9rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: all 160ms ease;
+}
+
+.team-tab-btn.home-tab.active {
+  background: linear-gradient(135deg, rgba(245, 158, 11, 0.3), rgba(217, 119, 6, 0.3));
+  border-color: #f59e0b;
+  color: #fbbf24;
+  box-shadow: 0 0 15px rgba(245, 158, 11, 0.25);
+}
+
+.team-tab-btn.away-tab.active {
+  background: linear-gradient(135deg, rgba(6, 182, 212, 0.3), rgba(2, 132, 199, 0.3));
+  border-color: #06b6d4;
+  color: #38bdf8;
+  box-shadow: 0 0 15px rgba(6, 182, 212, 0.25);
+}
+
+.add-player-form {
+  display: flex;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+  background: rgba(0, 0, 0, 0.3);
+  padding: 0.65rem;
+  border-radius: 0.75rem;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.add-player-form input {
+  background: rgba(15, 23, 42, 0.8);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 0.5rem;
+  padding: 0.45rem 0.75rem;
+  color: #fff;
+  font-weight: 700;
+  font-size: 0.85rem;
+}
+
+.add-player-form input.num-input {
+  width: 5rem;
+  text-align: center;
+  font-family: var(--font-digital);
+}
+
+.add-player-form input.name-input {
+  flex: 1;
+}
+
+.btn-add-player {
+  padding: 0.45rem 1rem;
+  background: linear-gradient(135deg, #22c55e, #16a34a);
+  border: 1px solid rgba(34, 197, 94, 0.4);
+  border-radius: 0.5rem;
+  color: #fff;
+  font-weight: 900;
+  font-size: 0.82rem;
+  cursor: pointer;
+  transition: all 140ms ease;
+  white-space: nowrap;
+}
+
+.btn-add-player:hover {
+  filter: brightness(1.15);
+}
+
+.player-stats-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.82rem;
+}
+
+.player-stats-table th {
+  padding: 0.6rem 0.5rem;
+  background: rgba(0, 0, 0, 0.4);
+  color: #94a3b8;
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  font-size: 0.7rem;
+  text-align: center;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.player-stats-table th.left {
+  text-align: left;
+}
+
+.player-stats-table td {
+  padding: 0.5rem 0.4rem;
+  text-align: center;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+  vertical-align: middle;
+}
+
+.player-stats-table tr:hover {
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.player-num {
+  font-family: var(--font-digital);
+  font-weight: 900;
+  font-size: 0.95rem;
+  color: #facc15;
+}
+
+.player-name-cell {
+  font-weight: 800;
+  color: #f8fafc;
+  text-align: left;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.fouled-out-badge {
+  font-size: 0.62rem;
+  font-weight: 900;
+  padding: 0.1rem 0.4rem;
+  border-radius: 0.3rem;
+  background: rgba(239, 68, 68, 0.25);
+  border: 1px solid rgba(239, 68, 68, 0.5);
+  color: #fca5a5;
+  animation: pulseShot 500ms ease-in-out infinite alternate;
+}
+
+.foul-warning-badge-sm {
+  font-size: 0.62rem;
+  font-weight: 900;
+  padding: 0.1rem 0.4rem;
+  border-radius: 0.3rem;
+  background: rgba(245, 158, 11, 0.2);
+  border: 1px solid rgba(245, 158, 11, 0.4);
+  color: #fbbf24;
+}
+
+.stat-number {
+  font-family: var(--font-digital);
+  font-weight: 900;
+  font-size: 1.1rem;
+}
+
+.stat-cell-wrap {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.25rem;
+}
+
+.btn-stat-inc {
+  padding: 0.2rem 0.45rem;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 0.35rem;
+  color: #fff;
+  font-weight: 800;
+  font-size: 0.72rem;
+  cursor: pointer;
+  transition: all 100ms ease;
+}
+
+.btn-stat-inc:hover {
+  background: rgba(255, 255, 255, 0.25);
+}
+
+.btn-stat-inc.pts {
+  background: rgba(245, 158, 11, 0.2);
+  border-color: rgba(245, 158, 11, 0.4);
+  color: #fbbf24;
+}
+
+.btn-stat-inc.foul {
+  background: rgba(239, 68, 68, 0.2);
+  border-color: rgba(239, 68, 68, 0.4);
+  color: #fca5a5;
+}
+
+.btn-stat-inc.del {
+  background: rgba(255, 255, 255, 0.05);
+  border-color: rgba(255, 255, 255, 0.1);
+  color: #94a3b8;
+}
+
+.btn-stat-inc.del:hover {
+  background: rgba(239, 68, 68, 0.3);
+  color: #fff;
 }
 
 /* Custom Clock Modal Inputs */

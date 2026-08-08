@@ -47,11 +47,24 @@ type ActionId = ActionDefinition["id"];
 type HotkeyMap = Partial<Record<ActionId, string>>;
 type TeamSide = "home" | "away";
 
+type Player = {
+  id: string;
+  number: string;
+  name: string;
+  pts: number;
+  fouls: number;
+  reb: number;
+  ast: number;
+  stl: number;
+  blk: number;
+};
+
 type Team = {
   name: string;
   score: number;
   fouls: number;
   timeouts: number;
+  players: Player[];
 };
 
 type KeyCombo = {
@@ -93,11 +106,31 @@ const DEFAULT_HOTKEYS: HotkeyMap = {
   resetEverything: "Ctrl+Shift+KeyR",
 };
 
-const createTeam = (name: string): Team => ({
+const createDefaultPlayers = (side: TeamSide): Player[] => {
+  const isHome = side === "home";
+  return isHome
+    ? [
+        { id: "h1", number: "4", name: "J. Smith", pts: 0, fouls: 0, reb: 0, ast: 0, stl: 0, blk: 0 },
+        { id: "h2", number: "7", name: "M. Santos", pts: 0, fouls: 0, reb: 0, ast: 0, stl: 0, blk: 0 },
+        { id: "h3", number: "10", name: "K. Reyes", pts: 0, fouls: 0, reb: 0, ast: 0, stl: 0, blk: 0 },
+        { id: "h4", number: "23", name: "D. Cruz", pts: 0, fouls: 0, reb: 0, ast: 0, stl: 0, blk: 0 },
+        { id: "h5", number: "30", name: "A. Garcia", pts: 0, fouls: 0, reb: 0, ast: 0, stl: 0, blk: 0 },
+      ]
+    : [
+        { id: "a1", number: "3", name: "C. Paul", pts: 0, fouls: 0, reb: 0, ast: 0, stl: 0, blk: 0 },
+        { id: "a2", number: "8", name: "R. Miller", pts: 0, fouls: 0, reb: 0, ast: 0, stl: 0, blk: 0 },
+        { id: "a3", number: "11", name: "B. Lopez", pts: 0, fouls: 0, reb: 0, ast: 0, stl: 0, blk: 0 },
+        { id: "a4", number: "24", name: "K. Bryant", pts: 0, fouls: 0, reb: 0, ast: 0, stl: 0, blk: 0 },
+        { id: "a5", number: "34", name: "S. O'Neal", pts: 0, fouls: 0, reb: 0, ast: 0, stl: 0, blk: 0 },
+      ];
+};
+
+const createTeam = (name: string, side: TeamSide = "home"): Team => ({
   name,
   score: 0,
   fouls: 0,
   timeouts: DEFAULT_TIMEOUTS,
+  players: createDefaultPlayers(side),
 });
 
 const clamp = (value: number, min: number, max: number) => {
@@ -216,17 +249,24 @@ const loadStoredHotkeys = (): HotkeyMap => {
 };
 
 function App() {
-  const [home, setHome] = useState<Team>(() => createTeam("HOME"));
-  const [away, setAway] = useState<Team>(() => createTeam("AWAY"));
+  const [home, setHome] = useState<Team>(() => createTeam("HOME", "home"));
+  const [away, setAway] = useState<Team>(() => createTeam("AWAY", "away"));
   const [quarter, setQuarter] = useState(1);
   const [gameSeconds, setGameSeconds] = useState(DEFAULT_GAME_SECONDS);
   const [shotSeconds, setShotSeconds] = useState(DEFAULT_SHOT_SECONDS);
   const [isRunning, setIsRunning] = useState(false);
-  const [isRunningTimeMode, setIsRunningTimeMode] = useState(false); // Running Time Mode
+  const [isRunningTimeMode, setIsRunningTimeMode] = useState(false);
 
   // Modals & Popovers
   const [isTimeModalOpen, setIsTimeModalOpen] = useState(false);
   const [isHotkeyModalOpen, setIsHotkeyModalOpen] = useState(false);
+  const [isStatsModalOpen, setIsStatsModalOpen] = useState(false);
+  const [activeStatsTab, setActiveStatsTab] = useState<TeamSide>("home");
+
+  // Form Inputs for Adding Player
+  const [newPlayerNumber, setNewPlayerNumber] = useState("");
+  const [newPlayerName, setNewPlayerName] = useState("");
+
   const [customMinutes, setCustomMinutes] = useState("8");
   const [customSeconds, setCustomSeconds] = useState("00");
 
@@ -420,7 +460,6 @@ function App() {
     window.localStorage.setItem(HOTKEY_STORAGE_KEY, JSON.stringify(hotkeys));
   }, [hotkeys]);
 
-  // Helper to auto-resume clock in Running Time mode if gameSeconds > 0
   const checkRunningTimeResume = useCallback(() => {
     if (isRunningTimeMode && gameSeconds > 0) {
       setIsRunning(true);
@@ -477,6 +516,76 @@ function App() {
     [updateTeam]
   );
 
+  // Player Stats Operations
+  const adjustPlayerStat = useCallback(
+    (side: TeamSide, playerId: string, statKey: keyof Omit<Player, "id" | "number" | "name">, amount: number) => {
+      updateTeam(side, (team) => {
+        let scoreDiff = 0;
+        let foulsDiff = 0;
+
+        const updatedPlayers = team.players.map((player) => {
+          if (player.id !== playerId) return player;
+
+          const currentVal = player[statKey];
+          const newVal = Math.max(0, currentVal + amount);
+          const diff = newVal - currentVal;
+
+          if (statKey === "pts") scoreDiff = diff;
+          if (statKey === "fouls") foulsDiff = diff;
+
+          return { ...player, [statKey]: newVal };
+        });
+
+        return {
+          ...team,
+          score: Math.max(0, team.score + scoreDiff),
+          fouls: Math.max(0, team.fouls + foulsDiff),
+          players: updatedPlayers,
+        };
+      });
+
+      if (statKey === "pts" || statKey === "fouls") {
+        checkRunningTimeResume();
+      }
+    },
+    [checkRunningTimeResume, updateTeam]
+  );
+
+  const handleAddPlayer = useCallback(
+    (side: TeamSide) => {
+      if (!newPlayerNumber.trim() || !newPlayerName.trim()) return;
+
+      updateTeam(side, (team) => {
+        const newPlayer: Player = {
+          id: `p-${Date.now()}`,
+          number: newPlayerNumber.trim(),
+          name: newPlayerName.trim(),
+          pts: 0,
+          fouls: 0,
+          reb: 0,
+          ast: 0,
+          stl: 0,
+          blk: 0,
+        };
+        return { ...team, players: [...team.players, newPlayer] };
+      });
+
+      setNewPlayerNumber("");
+      setNewPlayerName("");
+    },
+    [newPlayerName, newPlayerNumber, updateTeam]
+  );
+
+  const handleDeletePlayer = useCallback(
+    (side: TeamSide, playerId: string) => {
+      updateTeam(side, (team) => ({
+        ...team,
+        players: team.players.filter((p) => p.id !== playerId),
+      }));
+    },
+    [updateTeam]
+  );
+
   const resetGameClock = useCallback(() => {
     setIsRunning(false);
     setGameSeconds(DEFAULT_GAME_SECONDS);
@@ -512,12 +621,12 @@ function App() {
   }, []);
 
   const resetEverything = useCallback(() => {
-    const shouldReset = window.confirm("Reset the entire scoreboard?");
+    const shouldReset = window.confirm("Reset the entire scoreboard and player stats?");
     if (!shouldReset) return;
 
     setIsRunning(false);
-    setHome(createTeam("HOME"));
-    setAway(createTeam("AWAY"));
+    setHome(createTeam("HOME", "home"));
+    setAway(createTeam("AWAY", "away"));
     setQuarter(1);
     setGameSeconds(DEFAULT_GAME_SECONDS);
     setShotSeconds(DEFAULT_SHOT_SECONDS);
@@ -818,14 +927,35 @@ function App() {
     }, {});
   }, []);
 
+  // Compute Top Scorer & Foul Trouble for Team Card
+  const getTeamHighlights = (team: Team) => {
+    const topScorer = [...team.players].sort((a, b) => b.pts - a.pts)[0];
+    const foulTrouble = team.players.find((p) => p.fouls >= 4);
+
+    return {
+      topScorer: topScorer && topScorer.pts > 0 ? `#${topScorer.number} ${topScorer.name} (${topScorer.pts}p)` : null,
+      foulTrouble: foulTrouble ? `#${foulTrouble.number} ${foulTrouble.name} (${foulTrouble.fouls} PF)` : null,
+    };
+  };
+
   const renderTeamCard = (side: TeamSide, team: Team) => {
     const isHome = side === "home";
     const prefix = isHome ? "home" : "away";
+    const highlights = getTeamHighlights(team);
 
     return (
       <section className={`team-card ${isHome ? "home" : "away"}`}>
         <div className="team-header-row">
           <span className="team-tag">{isHome ? "HOME TEAM" : "AWAY TEAM"}</span>
+          <button
+            className="roster-drawer-btn"
+            onClick={() => {
+              setActiveStatsTab(side);
+              setIsStatsModalOpen(true);
+            }}
+          >
+            👥 Roster ({team.players.length})
+          </button>
         </div>
 
         <input
@@ -835,6 +965,20 @@ function App() {
           maxLength={18}
           onChange={(event) => setTeamName(side, event.target.value)}
         />
+
+        {/* Player Stats Highlights */}
+        {(highlights.topScorer || highlights.foulTrouble) && (
+          <div className="player-summary-strip">
+            {highlights.topScorer ? (
+              <span className="top-scorer-badge">🔥 {highlights.topScorer}</span>
+            ) : (
+              <span></span>
+            )}
+            {highlights.foulTrouble && (
+              <span className="foul-warning-badge">⚠️ {highlights.foulTrouble}</span>
+            )}
+          </div>
+        )}
 
         <div className="score-box">
           <span className="score-number">{team.score}</span>
@@ -906,6 +1050,8 @@ function App() {
     );
   };
 
+  const currentStatsTeam = activeStatsTab === "home" ? home : away;
+
   return (
     <div className="scoreboard-viewport">
       {/* Header Bar */}
@@ -936,6 +1082,13 @@ function App() {
         </div>
 
         <div className="header-actions">
+          <button
+            className="icon-btn stats-btn"
+            onClick={() => setIsStatsModalOpen(true)}
+            title="Player Stats & Box Score"
+          >
+            📊 Player Stats
+          </button>
           <button className="icon-btn" onClick={() => setIsTimeModalOpen(true)} title="Set Custom Time">
             ⏱️ Time
           </button>
@@ -1079,6 +1232,204 @@ function App() {
           </button>
         </div>
       </footer>
+
+      {/* Modal: Player Stats Tracker & Roster Manager */}
+      {isStatsModalOpen && (
+        <div className="modal-backdrop" onClick={() => setIsStatsModalOpen(false)}>
+          <div className="modal-card" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header">
+              <h2>Player Stats & Box Score</h2>
+              <button className="modal-close-btn" onClick={() => setIsStatsModalOpen(false)}>
+                ✕
+              </button>
+            </div>
+
+            <div className="modal-body">
+              {/* Team Tabs */}
+              <div className="team-tab-bar">
+                <button
+                  className={`team-tab-btn home-tab ${activeStatsTab === "home" ? "active" : ""}`}
+                  onClick={() => setActiveStatsTab("home")}
+                >
+                  {home.name} ({home.score} PTS)
+                </button>
+                <button
+                  className={`team-tab-btn away-tab ${activeStatsTab === "away" ? "active" : ""}`}
+                  onClick={() => setActiveStatsTab("away")}
+                >
+                  {away.name} ({away.score} PTS)
+                </button>
+              </div>
+
+              {/* Add New Player Form */}
+              <div className="add-player-form">
+                <input
+                  className="num-input"
+                  placeholder="# Jersey"
+                  maxLength={3}
+                  value={newPlayerNumber}
+                  onChange={(e) => setNewPlayerNumber(e.target.value)}
+                />
+                <input
+                  className="name-input"
+                  placeholder="Player Name (e.g. J. Cruz)"
+                  maxLength={24}
+                  value={newPlayerName}
+                  onChange={(e) => setNewPlayerName(e.target.value)}
+                />
+                <button className="btn-add-player" onClick={() => handleAddPlayer(activeStatsTab)}>
+                  + Add Player
+                </button>
+              </div>
+
+              {/* Player Stats Table */}
+              <table className="player-stats-table">
+                <thead>
+                  <tr>
+                    <th style={{ width: "8%" }}>#</th>
+                    <th className="left">PLAYER</th>
+                    <th style={{ width: "16%" }}>PTS</th>
+                    <th style={{ width: "16%" }}>FOULS</th>
+                    <th style={{ width: "12%" }}>REB</th>
+                    <th style={{ width: "12%" }}>AST</th>
+                    <th style={{ width: "10%" }}>STL</th>
+                    <th style={{ width: "10%" }}>BLK</th>
+                    <th style={{ width: "8%" }}></th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {currentStatsTeam.players.map((player) => (
+                    <tr key={player.id}>
+                      <td className="player-num">#{player.number}</td>
+                      <td>
+                        <div className="player-name-cell">
+                          <span>{player.name}</span>
+                          {player.fouls >= 5 && <span className="fouled-out-badge">FOULED OUT</span>}
+                          {player.fouls === 4 && <span className="foul-warning-badge-sm">4 PF</span>}
+                        </div>
+                      </td>
+
+                      {/* Points */}
+                      <td>
+                        <div className="stat-cell-wrap">
+                          <span className="stat-number">{player.pts}</span>
+                          <button
+                            className="btn-stat-inc pts"
+                            onClick={() => adjustPlayerStat(activeStatsTab, player.id, "pts", 1)}
+                            title="+1 Point"
+                          >
+                            +1
+                          </button>
+                          <button
+                            className="btn-stat-inc pts"
+                            onClick={() => adjustPlayerStat(activeStatsTab, player.id, "pts", 2)}
+                            title="+2 Points"
+                          >
+                            +2
+                          </button>
+                          <button
+                            className="btn-stat-inc pts"
+                            onClick={() => adjustPlayerStat(activeStatsTab, player.id, "pts", 3)}
+                            title="+3 Points"
+                          >
+                            +3
+                          </button>
+                        </div>
+                      </td>
+
+                      {/* Fouls */}
+                      <td>
+                        <div className="stat-cell-wrap">
+                          <span className="stat-number" style={{ color: player.fouls >= 5 ? "#ef4444" : "#fff" }}>
+                            {player.fouls}
+                          </span>
+                          <button
+                            className="btn-stat-inc foul"
+                            onClick={() => adjustPlayerStat(activeStatsTab, player.id, "fouls", 1)}
+                            title="+1 Foul"
+                          >
+                            +F
+                          </button>
+                        </div>
+                      </td>
+
+                      {/* Rebounds */}
+                      <td>
+                        <div className="stat-cell-wrap">
+                          <span className="stat-number">{player.reb}</span>
+                          <button
+                            className="btn-stat-inc"
+                            onClick={() => adjustPlayerStat(activeStatsTab, player.id, "reb", 1)}
+                          >
+                            +1
+                          </button>
+                        </div>
+                      </td>
+
+                      {/* Assists */}
+                      <td>
+                        <div className="stat-cell-wrap">
+                          <span className="stat-number">{player.ast}</span>
+                          <button
+                            className="btn-stat-inc"
+                            onClick={() => adjustPlayerStat(activeStatsTab, player.id, "ast", 1)}
+                          >
+                            +1
+                          </button>
+                        </div>
+                      </td>
+
+                      {/* Steals */}
+                      <td>
+                        <div className="stat-cell-wrap">
+                          <span className="stat-number">{player.stl}</span>
+                          <button
+                            className="btn-stat-inc"
+                            onClick={() => adjustPlayerStat(activeStatsTab, player.id, "stl", 1)}
+                          >
+                            +1
+                          </button>
+                        </div>
+                      </td>
+
+                      {/* Blocks */}
+                      <td>
+                        <div className="stat-cell-wrap">
+                          <span className="stat-number">{player.blk}</span>
+                          <button
+                            className="btn-stat-inc"
+                            onClick={() => adjustPlayerStat(activeStatsTab, player.id, "blk", 1)}
+                          >
+                            +1
+                          </button>
+                        </div>
+                      </td>
+
+                      {/* Delete */}
+                      <td>
+                        <button
+                          className="btn-stat-inc del"
+                          onClick={() => handleDeletePlayer(activeStatsTab, player.id)}
+                          title="Remove Player"
+                        >
+                          ✕
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                  {currentStatsTeam.players.length === 0 && (
+                    <tr>
+                      <td colSpan={9} style={{ textAlign: "center", color: "#94a3b8", padding: "2rem" }}>
+                        No players added to roster yet. Use the form above to add players.
+                      </td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Modal: Custom Time Selector */}
       {isTimeModalOpen && (
