@@ -175,27 +175,32 @@ button, input, select {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  overflow: hidden;
-  height: 1.05em;
+  overflow: visible;
+  height: 1.25em;
   position: relative;
+  min-width: 2.2ch;
 }
 
 .rolling-score-digit-container {
   display: flex;
   flex-direction: column;
+  align-items: center;
+  justify-content: center;
   position: relative;
+  width: 100%;
 }
 
 .rolling-score-number {
   font-family: var(--font-digital);
-  font-size: clamp(3.2rem, 5.8vw, 5.5rem);
+  font-size: clamp(3rem, 5vw, 4.6rem);
   font-weight: 900;
-  line-height: 0.95;
+  line-height: 1.15;
   font-variant-numeric: tabular-nums;
-  letter-spacing: -0.04em;
+  letter-spacing: -0.02em;
   user-select: none;
   display: inline-block;
   will-change: transform, opacity;
+  padding: 0.1rem 0;
 }
 
 .rolling-score-number.roll-out {
@@ -564,8 +569,9 @@ button, input, select {
   display: flex;
   align-items: center;
   justify-content: center;
-  margin: 0.25rem 0;
-  padding: 0.25rem;
+  margin: 0.35rem 0;
+  padding: 0.5rem 1rem;
+  min-height: 5.2rem;
   background: rgba(3, 7, 18, 0.85);
   border: 1px solid rgba(255, 255, 255, 0.12);
   border-radius: 0.75rem;

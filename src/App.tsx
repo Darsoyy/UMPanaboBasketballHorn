@@ -371,9 +371,10 @@ type RollingScoreProps = {
   score: number;
   animClass?: string;
   isHome?: boolean;
+  animKey?: number;
 };
 
-const RollingScoreNumber = ({ score, animClass = "", isHome = true }: RollingScoreProps) => {
+const RollingScoreNumber = ({ score, animClass = "", isHome = true, animKey }: RollingScoreProps) => {
   const [displayScore, setDisplayScore] = useState(score);
   const [prevScore, setPrevScore] = useState<number | null>(null);
   const [isRolling, setIsRolling] = useState(false);
@@ -386,7 +387,7 @@ const RollingScoreNumber = ({ score, animClass = "", isHome = true }: RollingSco
       const timer = setTimeout(() => {
         setIsRolling(false);
         setPrevScore(null);
-      }, 300);
+      }, 350);
       return () => clearTimeout(timer);
     }
   }, [score, displayScore]);
@@ -394,16 +395,18 @@ const RollingScoreNumber = ({ score, animClass = "", isHome = true }: RollingSco
   const colorClass = isHome ? "home" : "away";
 
   return (
-    <div className={`rolling-score-box ${colorClass}`}>
+    <div key={animKey} className={`rolling-score-box ${colorClass}`}>
       {isRolling && prevScore !== null ? (
         <div className="rolling-score-digit-container">
           <span className={`rolling-score-number roll-out ${animClass}`}>{prevScore}</span>
-          <span className={`rolling-score-number roll-in ${animClass}`} style={{ position: "absolute", top: 0, left: 0 }}>
+          <span className={`rolling-score-number roll-in ${animClass}`} style={{ position: "absolute", top: 0, left: 0, width: "100%", textAlign: "center" }}>
             {displayScore}
           </span>
         </div>
       ) : (
-        <span className={`rolling-score-number ${animClass}`}>{displayScore}</span>
+        <span key={`digit-${score}-${animKey || "static"}`} className={`rolling-score-number ${animClass}`}>
+          {displayScore}
+        </span>
       )}
     </div>
   );
@@ -491,6 +494,9 @@ function App() {
   const hasPlayedGameEndHornRef = useRef(false);
   const hasPlayedShotEndHornRef = useRef(false);
 
+  const homeAnimTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const awayAnimTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
   const triggerScoreAnim = useCallback((side: TeamSide, amount: number) => {
     if (amount <= 0 || amount > 3) return;
 
@@ -498,15 +504,33 @@ function App() {
     const animObj = { type: animType, id: Date.now() };
 
     if (side === "home") {
-      setHomeScoreAnim(animObj);
-      setHomePulse(true);
-      setTimeout(() => setHomePulse(false), 600);
-      setTimeout(() => setHomeScoreAnim(null), 1500);
+      if (homeAnimTimerRef.current) clearTimeout(homeAnimTimerRef.current);
+      setHomeScoreAnim(null);
+      setHomePulse(false);
+
+      setTimeout(() => {
+        setHomeScoreAnim(animObj);
+        setHomePulse(true);
+      }, 10);
+
+      homeAnimTimerRef.current = setTimeout(() => {
+        setHomePulse(false);
+        setHomeScoreAnim(null);
+      }, 1500);
     } else {
-      setAwayScoreAnim(animObj);
-      setAwayPulse(true);
-      setTimeout(() => setAwayPulse(false), 600);
-      setTimeout(() => setAwayScoreAnim(null), 1500);
+      if (awayAnimTimerRef.current) clearTimeout(awayAnimTimerRef.current);
+      setAwayScoreAnim(null);
+      setAwayPulse(false);
+
+      setTimeout(() => {
+        setAwayScoreAnim(animObj);
+        setAwayPulse(true);
+      }, 10);
+
+      awayAnimTimerRef.current = setTimeout(() => {
+        setAwayPulse(false);
+        setAwayScoreAnim(null);
+      }, 1500);
     }
   }, []);
 
@@ -1329,7 +1353,13 @@ function App() {
               </div>
             </>
           )}
-          <RollingScoreNumber score={team.score} animClass={animClass} isHome={isHome} />
+          <RollingScoreNumber
+            key={animState ? `score-${team.score}-${animState.id}` : `score-${team.score}`}
+            animKey={animState?.id}
+            score={team.score}
+            animClass={animClass}
+            isHome={isHome}
+          />
         </div>
 
         <div className="team-stats-row">
