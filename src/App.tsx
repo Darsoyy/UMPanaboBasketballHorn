@@ -3,7 +3,7 @@ import { type ReactNode, useCallback, useEffect, useMemo, useRef, useState } fro
 const DEFAULT_GAME_SECONDS = 12 * 60;
 const DEFAULT_SHOT_SECONDS = 24;
 const DEFAULT_TIMEOUTS = 5;
-const HOTKEY_STORAGE_KEY = "basketball-scoreboard-hotkeys-v4";
+const HOTKEY_STORAGE_KEY = "basketball-scoreboard-hotkeys-v5";
 const RESERVED_HORN_HOTKEY = "Space";
 
 const ACTION_DEFINITIONS = [
@@ -158,7 +158,7 @@ const codeToLabel = (code: string) => {
 };
 
 const comboToLabel = (combo?: string | null) => {
-  if (!combo) return "Unassigned";
+  if (!combo) return "";
 
   return combo
     .split("+")
@@ -166,7 +166,7 @@ const comboToLabel = (combo?: string | null) => {
       if (["Ctrl", "Alt", "Shift", "Meta"].includes(part)) return part;
       return codeToLabel(part);
     })
-    .join(" + ");
+    .join("+");
 };
 
 const readComboFromEvent = (event: KeyboardEvent): KeyCombo | null => {
@@ -205,15 +205,9 @@ const loadStoredHotkeys = (): HotkeyMap => {
 
   try {
     const saved = window.localStorage.getItem(HOTKEY_STORAGE_KEY);
-
     if (!saved) return DEFAULT_HOTKEYS;
-
     const parsed = JSON.parse(saved) as HotkeyMap;
-
-    return {
-      ...DEFAULT_HOTKEYS,
-      ...parsed,
-    };
+    return { ...DEFAULT_HOTKEYS, ...parsed };
   } catch {
     return DEFAULT_HOTKEYS;
   }
@@ -226,14 +220,17 @@ function App() {
   const [gameSeconds, setGameSeconds] = useState(DEFAULT_GAME_SECONDS);
   const [shotSeconds, setShotSeconds] = useState(DEFAULT_SHOT_SECONDS);
   const [isRunning, setIsRunning] = useState(false);
+
+  // Modals & Popovers
+  const [isTimeModalOpen, setIsTimeModalOpen] = useState(false);
+  const [isHotkeyModalOpen, setIsHotkeyModalOpen] = useState(false);
   const [customMinutes, setCustomMinutes] = useState("12");
   const [customSeconds, setCustomSeconds] = useState("00");
+
   const [isHornActive, setIsHornActive] = useState(false);
   const [hotkeys, setHotkeys] = useState<HotkeyMap>(() => loadStoredHotkeys());
   const [recordingActionId, setRecordingActionId] = useState<ActionId | null>(null);
-  const [hotkeyNotice, setHotkeyNotice] = useState(
-    "Click Change, then press your desired key combination."
-  );
+  const [hotkeyNotice, setHotkeyNotice] = useState("Click 'Change' on any action and press your hotkey combination.");
 
   const hornGraphRef = useRef<HornGraph | null>(null);
   const hornOscillatorsRef = useRef<OscillatorNode[]>([]);
@@ -243,9 +240,7 @@ function App() {
   const hasPlayedShotEndHornRef = useRef(false);
 
   const createHornGraph = useCallback((): HornGraph | null => {
-    if (hornGraphRef.current) {
-      return hornGraphRef.current;
-    }
+    if (hornGraphRef.current) return hornGraphRef.current;
 
     const AudioContextClass =
       window.AudioContext ||
@@ -254,30 +249,21 @@ function App() {
     if (!AudioContextClass) return null;
 
     const context = new AudioContextClass();
-
     const input = context.createGain();
     const filter = context.createBiquadFilter();
     const master = context.createGain();
 
     input.gain.value = 0;
-
     filter.type = "lowpass";
     filter.frequency.value = 3200;
     filter.Q.value = 1.1;
-
     master.gain.value = 0.95;
 
     input.connect(filter);
     filter.connect(master);
     master.connect(context.destination);
 
-    const graph: HornGraph = {
-      context,
-      input,
-      filter,
-      master,
-    };
-
+    const graph: HornGraph = { context, input, filter, master };
     hornGraphRef.current = graph;
 
     return graph;
@@ -285,9 +271,7 @@ function App() {
 
   const startHorn = useCallback(async () => {
     if (hornRunningRef.current) return;
-
     const graph = createHornGraph();
-
     if (!graph) return;
 
     if (graph.context.state === "suspended") {
@@ -298,7 +282,6 @@ function App() {
     setIsHornActive(true);
 
     const now = graph.context.currentTime;
-
     graph.input.gain.cancelScheduledValues(now);
     graph.input.gain.setValueAtTime(0.0001, now);
     graph.input.gain.exponentialRampToValueAtTime(0.9, now + 0.035);
@@ -332,16 +315,13 @@ function App() {
 
   const stopHorn = useCallback(() => {
     if (!hornRunningRef.current) return;
-
     const graph = hornGraphRef.current;
-
     if (!graph) return;
 
     hornRunningRef.current = false;
     setIsHornActive(false);
 
     const now = graph.context.currentTime;
-
     graph.input.gain.cancelScheduledValues(now);
     graph.input.gain.setTargetAtTime(0.0001, now, 0.03);
 
@@ -349,7 +329,7 @@ function App() {
       try {
         oscillator.stop(now + 0.08);
       } catch {
-        // Ignore if already stopped.
+        // Ignore if stopped
       }
     });
 
@@ -358,71 +338,73 @@ function App() {
         try {
           oscillator.disconnect();
         } catch {
-          // Ignore if already disconnected.
+          // Ignore
         }
       });
-
       hornOscillatorsRef.current = [];
     }, 300);
   }, []);
 
-  const playHornOnce = useCallback(async () => {
-    const graph = createHornGraph();
+  const playHornOnce = useCallback(
+    async (durationSeconds = 0.45) => {
+      const graph = createHornGraph();
+      if (!graph) return;
 
-    if (!graph) return;
-
-    if (graph.context.state === "suspended") {
-      await graph.context.resume().catch(() => undefined);
-    }
-
-    const now = graph.context.currentTime;
-    const oneShotGain = graph.context.createGain();
-
-    oneShotGain.gain.setValueAtTime(0.0001, now);
-    oneShotGain.gain.exponentialRampToValueAtTime(0.86, now + 0.025);
-    oneShotGain.gain.setTargetAtTime(0.0001, now + 0.28, 0.035);
-
-    const osc1 = graph.context.createOscillator();
-    const osc2 = graph.context.createOscillator();
-    const osc3 = graph.context.createOscillator();
-
-    osc1.type = "sawtooth";
-    osc2.type = "square";
-    osc3.type = "sawtooth";
-
-    osc1.frequency.setValueAtTime(120, now);
-    osc2.frequency.setValueAtTime(240, now);
-    osc3.frequency.setValueAtTime(180, now);
-
-    osc1.detune.setValueAtTime(-8, now);
-    osc2.detune.setValueAtTime(6, now);
-    osc3.detune.setValueAtTime(3, now);
-
-    osc1.connect(oneShotGain);
-    osc2.connect(oneShotGain);
-    osc3.connect(oneShotGain);
-
-    oneShotGain.connect(graph.filter);
-
-    osc1.start(now);
-    osc2.start(now);
-    osc3.start(now);
-
-    osc1.stop(now + 0.42);
-    osc2.stop(now + 0.42);
-    osc3.stop(now + 0.42);
-
-    window.setTimeout(() => {
-      try {
-        osc1.disconnect();
-        osc2.disconnect();
-        osc3.disconnect();
-        oneShotGain.disconnect();
-      } catch {
-        // Ignore cleanup errors.
+      if (graph.context.state === "suspended") {
+        await graph.context.resume().catch(() => undefined);
       }
-    }, 700);
-  }, [createHornGraph]);
+
+      const now = graph.context.currentTime;
+      const oneShotGain = graph.context.createGain();
+      const fadeStart = Math.max(0.08, durationSeconds - 0.18);
+      const stopTime = now + durationSeconds;
+
+      oneShotGain.gain.setValueAtTime(0.0001, now);
+      oneShotGain.gain.exponentialRampToValueAtTime(0.86, now + 0.025);
+      oneShotGain.gain.setTargetAtTime(0.0001, now + fadeStart, 0.045);
+
+      const osc1 = graph.context.createOscillator();
+      const osc2 = graph.context.createOscillator();
+      const osc3 = graph.context.createOscillator();
+
+      osc1.type = "sawtooth";
+      osc2.type = "square";
+      osc3.type = "sawtooth";
+
+      osc1.frequency.setValueAtTime(120, now);
+      osc2.frequency.setValueAtTime(240, now);
+      osc3.frequency.setValueAtTime(180, now);
+
+      osc1.detune.setValueAtTime(-8, now);
+      osc2.detune.setValueAtTime(6, now);
+      osc3.detune.setValueAtTime(3, now);
+
+      osc1.connect(oneShotGain);
+      osc2.connect(oneShotGain);
+      osc3.connect(oneShotGain);
+      oneShotGain.connect(graph.filter);
+
+      osc1.start(now);
+      osc2.start(now);
+      osc3.start(now);
+
+      osc1.stop(stopTime);
+      osc2.stop(stopTime);
+      osc3.stop(stopTime);
+
+      window.setTimeout(() => {
+        try {
+          osc1.disconnect();
+          osc2.disconnect();
+          osc3.disconnect();
+          oneShotGain.disconnect();
+        } catch {
+          // Ignore
+        }
+      }, Math.ceil((durationSeconds + 0.4) * 1000));
+    },
+    [createHornGraph]
+  );
 
   useEffect(() => {
     return () => {
@@ -490,26 +472,31 @@ function App() {
     setCustomSeconds("00");
   }, []);
 
-  const applyCustomTime = useCallback(() => {
-    const minutes = clamp(Number(customMinutes) || 0, 0, 99);
-    const seconds = clamp(Number(customSeconds) || 0, 0, 59);
+  const applyCustomTime = useCallback(
+    (mStr?: string, sStr?: string) => {
+      const targetM = mStr ?? customMinutes;
+      const targetS = sStr ?? customSeconds;
+      const minutes = clamp(Number(targetM) || 0, 0, 99);
+      const seconds = clamp(Number(targetS) || 0, 0, 59);
 
-    setIsRunning(false);
-    setGameSeconds(minutes * 60 + seconds);
-    setCustomMinutes(minutes.toString());
-    setCustomSeconds(seconds.toString().padStart(2, "0"));
-  }, [customMinutes, customSeconds]);
+      setIsRunning(false);
+      setGameSeconds(minutes * 60 + seconds);
+      setCustomMinutes(minutes.toString());
+      setCustomSeconds(seconds.toString().padStart(2, "0"));
+      setIsTimeModalOpen(false);
+    },
+    [customMinutes, customSeconds]
+  );
 
   const endQuarter = useCallback(() => {
     setIsRunning(false);
     setGameSeconds(DEFAULT_GAME_SECONDS);
     setShotSeconds(DEFAULT_SHOT_SECONDS);
-    setQuarter((current) => Math.min(4, current + 1));
+    setQuarter((current) => Math.min(5, current + 1));
   }, []);
 
   const resetEverything = useCallback(() => {
     const shouldReset = window.confirm("Reset the entire scoreboard?");
-
     if (!shouldReset) return;
 
     setIsRunning(false);
@@ -529,127 +516,96 @@ function App() {
         case "quarterPrev":
           setQuarter((current) => Math.max(1, current - 1));
           break;
-
         case "quarterNext":
-          setQuarter((current) => Math.min(4, current + 1));
+          setQuarter((current) => Math.min(5, current + 1));
           break;
-
         case "clockStart":
           if (gameSeconds > 0) setIsRunning(true);
           break;
-
         case "clockPause":
           setIsRunning(false);
           break;
-
         case "clockReset":
           resetGameClock();
           break;
-
         case "shot24":
           setShotSeconds(24);
           break;
-
         case "shot14":
           setShotSeconds(14);
           break;
-
         case "shot0":
           setShotSeconds(0);
           break;
-
         case "homeScorePlus1":
           adjustScore("home", 1);
           break;
-
         case "homeScorePlus2":
           adjustScore("home", 2);
           break;
-
         case "homeScorePlus3":
           adjustScore("home", 3);
           break;
-
         case "homeScoreMinus1":
           adjustScore("home", -1);
           break;
-
         case "homeScoreMinus2":
           adjustScore("home", -2);
           break;
-
         case "homeScoreMinus3":
           adjustScore("home", -3);
           break;
-
         case "homeFoulMinus":
           adjustFouls("home", -1);
           break;
-
         case "homeFoulPlus":
           adjustFouls("home", 1);
           break;
-
         case "homeTimeoutUse":
           adjustTimeouts("home", -1);
           break;
-
         case "homeTimeoutAdd":
           adjustTimeouts("home", 1);
           break;
-
         case "awayScorePlus1":
           adjustScore("away", 1);
           break;
-
         case "awayScorePlus2":
           adjustScore("away", 2);
           break;
-
         case "awayScorePlus3":
           adjustScore("away", 3);
           break;
-
         case "awayScoreMinus1":
           adjustScore("away", -1);
           break;
-
         case "awayScoreMinus2":
           adjustScore("away", -2);
           break;
-
         case "awayScoreMinus3":
           adjustScore("away", -3);
           break;
-
         case "awayFoulMinus":
           adjustFouls("away", -1);
           break;
-
         case "awayFoulPlus":
           adjustFouls("away", 1);
           break;
-
         case "awayTimeoutUse":
           adjustTimeouts("away", -1);
           break;
-
         case "awayTimeoutAdd":
           adjustTimeouts("away", 1);
           break;
-
         case "customTimeSet":
-          applyCustomTime();
+          setIsTimeModalOpen(true);
           break;
-
         case "resetShotClock":
           setShotSeconds(DEFAULT_SHOT_SECONDS);
           break;
-
         case "endQuarter":
           endQuarter();
           break;
-
         case "resetEverything":
           resetEverything();
           break;
@@ -659,7 +615,6 @@ function App() {
       adjustFouls,
       adjustScore,
       adjustTimeouts,
-      applyCustomTime,
       endQuarter,
       gameSeconds,
       resetEverything,
@@ -671,7 +626,7 @@ function App() {
     const action = ACTION_DEFINITIONS.find((item) => item.id === actionId);
 
     if (combo.id === RESERVED_HORN_HOTKEY) {
-      setHotkeyNotice("Space is reserved for the long horn only.");
+      setHotkeyNotice("Space is reserved for the long horn.");
       setRecordingActionId(null);
       return;
     }
@@ -686,7 +641,6 @@ function App() {
       });
 
       next[actionId] = combo.id;
-
       return next;
     });
 
@@ -708,20 +662,17 @@ function App() {
 
   const resetHotkeys = useCallback(() => {
     setHotkeys(DEFAULT_HOTKEYS);
-    setHotkeyNotice("Hotkeys restored to the default layout.");
+    setHotkeyNotice("Hotkeys restored to default layout.");
   }, []);
 
   const hotkeyLookup = useMemo(() => {
     const lookup = new Map<string, ActionId>();
-
     ACTION_DEFINITIONS.forEach((action) => {
       const combo = hotkeys[action.id];
-
       if (combo) {
         lookup.set(combo, action.id);
       }
     });
-
     return lookup;
   }, [hotkeys]);
 
@@ -729,13 +680,10 @@ function App() {
     const handleKeyDown = (event: KeyboardEvent) => {
       if (recordingActionId) {
         const combo = readComboFromEvent(event);
-
         if (!combo) return;
-
         event.preventDefault();
         event.stopPropagation();
         event.stopImmediatePropagation();
-
         assignHotkey(recordingActionId, combo);
         return;
       }
@@ -759,11 +707,9 @@ function App() {
       if (isTypingTarget(event.target) || event.repeat) return;
 
       const combo = readComboFromEvent(event);
-
       if (!combo) return;
 
       const actionId = hotkeyLookup.get(combo.id);
-
       if (!actionId) return;
 
       event.preventDefault();
@@ -801,13 +747,11 @@ function App() {
         if (current <= 1) {
           if (!hasPlayedGameEndHornRef.current) {
             hasPlayedGameEndHornRef.current = true;
-            void playHornOnce();
+            void playHornOnce(3);
           }
-
           setIsRunning(false);
           return 0;
         }
-
         return current - 1;
       });
 
@@ -817,10 +761,8 @@ function App() {
             hasPlayedShotEndHornRef.current = true;
             void playHornOnce();
           }
-
           return 0;
         }
-
         return current - 1;
       });
     }, 1000);
@@ -829,22 +771,25 @@ function App() {
   }, [isRunning, playHornOnce]);
 
   useEffect(() => {
-    if (gameSeconds > 0) {
-      hasPlayedGameEndHornRef.current = false;
-    }
+    if (gameSeconds > 0) hasPlayedGameEndHornRef.current = false;
   }, [gameSeconds]);
 
   useEffect(() => {
-    if (shotSeconds > 0) {
-      hasPlayedShotEndHornRef.current = false;
-    }
+    if (shotSeconds > 0) hasPlayedShotEndHornRef.current = false;
   }, [shotSeconds]);
 
   const leadingTeam = useMemo(() => {
     if (home.score === away.score) return "TIE GAME";
-
     return home.score > away.score ? `${home.name} LEADS` : `${away.name} LEADS`;
   }, [away.name, away.score, home.name, home.score]);
+
+  const toggleFullscreen = () => {
+    if (!document.fullscreenElement) {
+      document.documentElement.requestFullscreen().catch(() => undefined);
+    } else {
+      document.exitFullscreen().catch(() => undefined);
+    }
+  };
 
   const actionsByCategory = useMemo(() => {
     return ACTION_DEFINITIONS.reduce<Record<string, ActionDefinition[]>>((groups, action) => {
@@ -854,37 +799,16 @@ function App() {
     }, {});
   }, []);
 
-  const ActionButton = ({
-    actionId,
-    children,
-    className = "",
-    disabled = false,
-  }: {
-    actionId: ActionId;
-    children: ReactNode;
-    className?: string;
-    disabled?: boolean;
-  }) => {
-    const hotkey = hotkeys[actionId];
-
-    return (
-      <button
-        className={`action-button ${className}`}
-        onClick={() => executeAction(actionId)}
-        disabled={disabled}
-      >
-        <span>{children}</span>
-        {hotkey ? <kbd>{comboToLabel(hotkey)}</kbd> : null}
-      </button>
-    );
-  };
-
-  const renderTeamPanel = (side: TeamSide, team: Team) => {
+  const renderTeamCard = (side: TeamSide, team: Team) => {
     const isHome = side === "home";
     const prefix = isHome ? "home" : "away";
 
     return (
-      <section className={`team-card ${isHome ? "home-card" : "away-card"}`}>
+      <section className={`team-card ${isHome ? "home" : "away"}`}>
+        <div className="team-header-row">
+          <span className="team-tag">{isHome ? "HOME TEAM" : "AWAY TEAM"}</span>
+        </div>
+
         <input
           className="team-name-input"
           aria-label={`${isHome ? "Home" : "Away"} team name`}
@@ -893,46 +817,69 @@ function App() {
           onChange={(event) => setTeamName(side, event.target.value)}
         />
 
-        <div className="score-display" aria-label={`${team.name} score`}>
-          {team.score}
+        <div className="score-box">
+          <span className="score-number">{team.score}</span>
         </div>
 
-        <div className="score-buttons" aria-label={`${team.name} score controls`}>
-          <ActionButton actionId={`${prefix}ScorePlus1` as ActionId}>+1</ActionButton>
-          <ActionButton actionId={`${prefix}ScorePlus2` as ActionId}>+2</ActionButton>
-          <ActionButton actionId={`${prefix}ScorePlus3` as ActionId}>+3</ActionButton>
-
-          <ActionButton actionId={`${prefix}ScoreMinus1` as ActionId} className="danger">
+        <div className="score-actions-grid">
+          <button
+            className="btn-score"
+            onClick={() => adjustScore(side, 1)}
+            title={`+1 Point (${comboToLabel(hotkeys[`${prefix}ScorePlus1` as ActionId])})`}
+          >
+            +1
+            {hotkeys[`${prefix}ScorePlus1` as ActionId] && (
+              <span className="kbd-badge">{comboToLabel(hotkeys[`${prefix}ScorePlus1` as ActionId])}</span>
+            )}
+          </button>
+          <button
+            className="btn-score"
+            onClick={() => adjustScore(side, 2)}
+            title={`+2 Points (${comboToLabel(hotkeys[`${prefix}ScorePlus2` as ActionId])})`}
+          >
+            +2
+            {hotkeys[`${prefix}ScorePlus2` as ActionId] && (
+              <span className="kbd-badge">{comboToLabel(hotkeys[`${prefix}ScorePlus2` as ActionId])}</span>
+            )}
+          </button>
+          <button
+            className="btn-score"
+            onClick={() => adjustScore(side, 3)}
+            title={`+3 Points (${comboToLabel(hotkeys[`${prefix}ScorePlus3` as ActionId])})`}
+          >
+            +3
+            {hotkeys[`${prefix}ScorePlus3` as ActionId] && (
+              <span className="kbd-badge">{comboToLabel(hotkeys[`${prefix}ScorePlus3` as ActionId])}</span>
+            )}
+          </button>
+          <button
+            className="btn-score minus"
+            onClick={() => adjustScore(side, -1)}
+            title={`-1 Point (${comboToLabel(hotkeys[`${prefix}ScoreMinus1` as ActionId])})`}
+          >
             -1
-          </ActionButton>
-
-          <ActionButton actionId={`${prefix}ScoreMinus2` as ActionId} className="danger">
-            -2
-          </ActionButton>
-
-          <ActionButton actionId={`${prefix}ScoreMinus3` as ActionId} className="danger">
-            -3
-          </ActionButton>
+            {hotkeys[`${prefix}ScoreMinus1` as ActionId] && (
+              <span className="kbd-badge">{comboToLabel(hotkeys[`${prefix}ScoreMinus1` as ActionId])}</span>
+            )}
+          </button>
         </div>
 
-        <div className="team-stat-grid">
-          <div className="stat-card">
-            <span>Fouls</span>
-            <strong>{team.fouls}</strong>
-
-            <div className="mini-controls">
-              <ActionButton actionId={`${prefix}FoulMinus` as ActionId}>-</ActionButton>
-              <ActionButton actionId={`${prefix}FoulPlus` as ActionId}>+</ActionButton>
+        <div className="team-stats-row">
+          <div className="stat-box">
+            <label>FOULS</label>
+            <span className="stat-value">{team.fouls}</span>
+            <div className="stat-controls">
+              <button className="btn-mini" onClick={() => adjustFouls(side, -1)}>-</button>
+              <button className="btn-mini" onClick={() => adjustFouls(side, 1)}>+</button>
             </div>
           </div>
 
-          <div className="stat-card">
-            <span>Timeouts</span>
-            <strong>{team.timeouts}</strong>
-
-            <div className="mini-controls">
-              <ActionButton actionId={`${prefix}TimeoutUse` as ActionId}>Use</ActionButton>
-              <ActionButton actionId={`${prefix}TimeoutAdd` as ActionId}>Add</ActionButton>
+          <div className="stat-box">
+            <label>TIMEOUTS</label>
+            <span className="stat-value">{team.timeouts}</span>
+            <div className="stat-controls">
+              <button className="btn-mini" onClick={() => adjustTimeouts(side, -1)}>Use</button>
+              <button className="btn-mini" onClick={() => adjustTimeouts(side, 1)}>Add</button>
             </div>
           </div>
         </div>
@@ -941,189 +888,292 @@ function App() {
   };
 
   return (
-    <main className="scoreboard-shell">
-      <header className="top-bar">
-        <div>
-          <p className="eyebrow">Basketball Scoreboard</p>
-          <h1>Game Control Center</h1>
+    <div className="scoreboard-viewport">
+      {/* Header Bar */}
+      <header className="arena-header">
+        <div className="brand-section">
+          <div className="logo-badge">UM</div>
+          <div className="brand-titles">
+            <h1>Basketball Scoreboard</h1>
+            <p>Panabo Arena Official Desk</p>
+          </div>
         </div>
 
-        <div className={`status-pill ${isRunning ? "live" : "paused"}`}>
-          {isRunning ? "LIVE" : "PAUSED"}
+        <div className="header-center-info">
+          <div className={`status-badge ${isRunning ? "live" : "paused"}`}>
+            <span className="status-dot"></span>
+            {isRunning ? "LIVE" : "PAUSED"}
+          </div>
+
+          <div className="lead-banner">{leadingTeam}</div>
+        </div>
+
+        <div className="header-actions">
+          <button className="icon-btn" onClick={() => setIsTimeModalOpen(true)} title="Set Custom Time">
+            ⏱️ Time
+          </button>
+          <button className="icon-btn" onClick={() => setIsHotkeyModalOpen(true)} title="Custom Hotkeys">
+            ⌨️ Hotkeys
+          </button>
+          <button className="icon-btn" onClick={toggleFullscreen} title="Toggle Fullscreen">
+            ⛶ Screen
+          </button>
         </div>
       </header>
 
-      <section className="center-board">
-        <div className="quarter-box">
-          <span>Quarter</span>
-          <strong>Q{quarter}</strong>
+      {/* Main 3-Column Arena Display Grid */}
+      <main className="arena-grid">
+        {/* Left: Home Team */}
+        {renderTeamCard("home", home)}
 
-          <div className="quarter-controls">
-            <ActionButton actionId="quarterPrev">Prev</ActionButton>
-            <ActionButton actionId="quarterNext">Next</ActionButton>
+        {/* Center: Game Clock & Shot Clock */}
+        <section className="center-column">
+          {/* Quarter selector pills */}
+          <div className="quarter-bar">
+            <span className="quarter-title">QUARTER</span>
+            <div className="quarter-pills">
+              {[1, 2, 3, 4].map((q) => (
+                <button
+                  key={q}
+                  className={`q-pill ${quarter === q ? "active" : ""}`}
+                  onClick={() => setQuarter(q)}
+                >
+                  Q{q}
+                </button>
+              ))}
+              <button
+                className={`q-pill ${quarter === 5 ? "active" : ""}`}
+                onClick={() => setQuarter(5)}
+              >
+                OT
+              </button>
+            </div>
           </div>
+
+          {/* Main Game Clock Card */}
+          <div className="main-clock-box">
+            <span className="clock-label">GAME CLOCK</span>
+            <div className={`game-clock-display ${gameSeconds <= 10 && gameSeconds > 0 ? "critical" : ""}`}>
+              {formatClock(gameSeconds)}
+            </div>
+
+            <div className="clock-main-controls">
+              {isRunning ? (
+                <button className="btn-clock pause" onClick={() => setIsRunning(false)}>
+                  PAUSE
+                  {hotkeys.clockPause && <span className="kbd-badge">{comboToLabel(hotkeys.clockPause)}</span>}
+                </button>
+              ) : (
+                <button
+                  className="btn-clock start"
+                  onClick={() => gameSeconds > 0 && setIsRunning(true)}
+                  disabled={gameSeconds === 0}
+                >
+                  START
+                  {hotkeys.clockStart && <span className="kbd-badge">{comboToLabel(hotkeys.clockStart)}</span>}
+                </button>
+              )}
+              <button className="btn-clock" onClick={resetGameClock}>
+                RESET
+              </button>
+            </div>
+          </div>
+
+          {/* Shot Clock Card */}
+          <div className="shot-clock-card">
+            <div className="shot-clock-display-wrap">
+              <span className="clock-label">SHOT CLOCK</span>
+              <span className={`shot-clock-number ${shotSeconds <= 5 && shotSeconds > 0 ? "critical" : ""}`}>
+                {shotSeconds}
+              </span>
+            </div>
+
+            <div className="shot-clock-actions">
+              <button className="btn-shot" onClick={() => setShotSeconds(24)} title="Set 24s">
+                24s
+              </button>
+              <button className="btn-shot" onClick={() => setShotSeconds(14)} title="Set 14s">
+                14s
+              </button>
+              <button className="btn-shot" onClick={() => setShotSeconds(0)} title="Zero Shot Clock">
+                0s
+              </button>
+            </div>
+          </div>
+        </section>
+
+        {/* Right: Away Team */}
+        {renderTeamCard("away", away)}
+      </main>
+
+      {/* Bottom Quick Control Desk Bar */}
+      <footer className="arena-footer-desk">
+        {/* Huge Horn Trigger */}
+        <button
+          className={`horn-btn-huge ${isHornActive ? "active" : ""}`}
+          type="button"
+          onMouseDown={() => void startHorn()}
+          onMouseUp={stopHorn}
+          onMouseLeave={stopHorn}
+          onTouchStart={(event) => {
+            event.preventDefault();
+            void startHorn();
+          }}
+          onTouchEnd={stopHorn}
+          onTouchCancel={stopHorn}
+        >
+          🔊 {isHornActive ? "BUZZING..." : "LONG HORN"}
+          <kbd>SPACE</kbd>
+        </button>
+
+        {/* Quick Actions */}
+        <div className="quick-actions-bar">
+          <button className="btn-desk-action" onClick={() => setShotSeconds(DEFAULT_SHOT_SECONDS)}>
+            Reset Shot
+            {hotkeys.resetShotClock && <span className="kbd-badge">{comboToLabel(hotkeys.resetShotClock)}</span>}
+          </button>
+          <button className="btn-desk-action" onClick={endQuarter}>
+            End Quarter
+            {hotkeys.endQuarter && <span className="kbd-badge">{comboToLabel(hotkeys.endQuarter)}</span>}
+          </button>
         </div>
 
-        <div className="clock-box">
-          <span>Game Clock</span>
-
-          <strong className={gameSeconds <= 10 ? "critical" : ""}>
-            {formatClock(gameSeconds)}
-          </strong>
-
-          <div className="clock-controls">
-            <ActionButton actionId="clockStart" className="primary" disabled={gameSeconds === 0}>
-              Start
-            </ActionButton>
-
-            <ActionButton actionId="clockPause">Pause</ActionButton>
-            <ActionButton actionId="clockReset">Reset</ActionButton>
-          </div>
+        {/* Action / Reset */}
+        <div className="quick-actions-bar">
+          <button className="btn-desk-action" onClick={() => setIsTimeModalOpen(true)}>
+            Custom Time
+          </button>
+          <button className="btn-desk-action danger" onClick={resetEverything}>
+            Reset Match
+          </button>
         </div>
+      </footer>
 
-        <div className="shot-box">
-          <span>Shot Clock</span>
-          <strong className={shotSeconds <= 5 ? "critical" : ""}>{shotSeconds}</strong>
+      {/* Modal: Custom Time Selector */}
+      {isTimeModalOpen && (
+        <div className="modal-backdrop" onClick={() => setIsTimeModalOpen(false)}>
+          <div className="modal-card" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header">
+              <h2>Set Custom Game Clock</h2>
+              <button className="modal-close-btn" onClick={() => setIsTimeModalOpen(false)}>
+                ✕
+              </button>
+            </div>
 
-          <div className="shot-controls">
-            <ActionButton actionId="shot24">24</ActionButton>
-            <ActionButton actionId="shot14">14</ActionButton>
-            <ActionButton actionId="shot0">0</ActionButton>
-          </div>
-        </div>
-      </section>
+            <div className="modal-body">
+              <div className="preset-time-row">
+                <button className="preset-time-btn" onClick={() => applyCustomTime("12", "00")}>
+                  12:00
+                </button>
+                <button className="preset-time-btn" onClick={() => applyCustomTime("10", "00")}>
+                  10:00
+                </button>
+                <button className="preset-time-btn" onClick={() => applyCustomTime("8", "00")}>
+                  8:00
+                </button>
+                <button className="preset-time-btn" onClick={() => applyCustomTime("5", "00")}>
+                  5:00
+                </button>
+                <button className="preset-time-btn" onClick={() => applyCustomTime("2", "00")}>
+                  2:00
+                </button>
+              </div>
 
-      <p className="lead-indicator">{leadingTeam}</p>
-
-      <section className="teams-layout">
-        {renderTeamPanel("home", home)}
-        {renderTeamPanel("away", away)}
-      </section>
-
-      <section className="control-desk">
-        <div className="custom-time-card">
-          <h2>Custom Game Clock</h2>
-
-          <div className="custom-time-inputs">
-            <label>
-              <span>Minutes</span>
-              <input
-                type="number"
-                min="0"
-                max="99"
-                value={customMinutes}
-                onChange={(event) => setCustomMinutes(event.target.value)}
-              />
-            </label>
-
-            <label>
-              <span>Seconds</span>
-              <input
-                type="number"
-                min="0"
-                max="59"
-                value={customSeconds}
-                onChange={(event) => setCustomSeconds(event.target.value)}
-              />
-            </label>
-
-            <ActionButton actionId="customTimeSet">Set Time</ActionButton>
-          </div>
-        </div>
-
-        <div className="horn-card">
-          <h2>Horn / Buzzer</h2>
-
-          <div className="horn-buttons">
-            <button
-              className={`horn-button long ${isHornActive ? "active" : ""}`}
-              type="button"
-              onMouseDown={() => void startHorn()}
-              onMouseUp={stopHorn}
-              onMouseLeave={stopHorn}
-              onTouchStart={(event) => {
-                event.preventDefault();
-                void startHorn();
-              }}
-              onTouchEnd={stopHorn}
-              onTouchCancel={stopHorn}
-            >
-              {isHornActive ? "BUZZING..." : "LONG HORN"}
-              <kbd>Hold / Space</kbd>
-            </button>
-          </div>
-        </div>
-
-        <div className="game-actions-card">
-          <h2>Game Actions</h2>
-
-          <div className="game-actions">
-            <ActionButton actionId="resetShotClock">Reset Shot Clock</ActionButton>
-            <ActionButton actionId="endQuarter">End Quarter</ActionButton>
-
-            <ActionButton actionId="resetEverything" className="reset-button">
-              Reset Everything
-            </ActionButton>
-          </div>
-        </div>
-      </section>
-
-      <section className="hotkeys-card">
-        <details open>
-          <summary>
-            <span>Custom Hotkeys</span>
-            <small>Long Horn is fixed to Space</small>
-          </summary>
-
-          <div className="hotkey-toolbar">
-            <p>{recordingActionId ? "Press the new key combination now." : hotkeyNotice}</p>
-            <button onClick={resetHotkeys}>Restore Default Hotkeys</button>
-          </div>
-
-          <div className="hotkey-groups">
-            {Object.keys(actionsByCategory).map((category) => {
-              const actions = actionsByCategory[category];
-
-              return (
-                <div className="hotkey-group" key={category}>
-                  <h3>{category}</h3>
-
-                  <div className="hotkey-list">
-                    {actions.map((action) => {
-                      const isRecording = recordingActionId === action.id;
-
-                      return (
-                        <div className="hotkey-row" key={action.id}>
-                          <span>{action.label}</span>
-
-                          <kbd>{isRecording ? "Press key..." : comboToLabel(hotkeys[action.id])}</kbd>
-
-                          <div>
-                            <button
-                              className={isRecording ? "recording" : ""}
-                              onClick={() => {
-                                setRecordingActionId(action.id);
-                                setHotkeyNotice(
-                                  `${action.label}: press any key combination. Space is reserved for the long horn.`
-                                );
-                              }}
-                            >
-                              {isRecording ? "Listening" : "Change"}
-                            </button>
-
-                            <button onClick={() => clearHotkey(action.id)}>Clear</button>
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
+              <div className="time-inputs-flex">
+                <div className="time-field">
+                  <label>MINUTES</label>
+                  <input
+                    type="number"
+                    min="0"
+                    max="99"
+                    value={customMinutes}
+                    onChange={(e) => setCustomMinutes(e.target.value)}
+                  />
                 </div>
-              );
-            })}
+                <span className="time-colon">:</span>
+                <div className="time-field">
+                  <label>SECONDS</label>
+                  <input
+                    type="number"
+                    min="0"
+                    max="59"
+                    value={customSeconds}
+                    onChange={(e) => setCustomSeconds(e.target.value)}
+                  />
+                </div>
+              </div>
+
+              <button className="horn-btn-huge" style={{ width: "100%" }} onClick={() => applyCustomTime()}>
+                APPLY TIME
+              </button>
+            </div>
           </div>
-        </details>
-      </section>
-    </main>
+        </div>
+      )}
+
+      {/* Modal: Custom Hotkeys Settings */}
+      {isHotkeyModalOpen && (
+        <div className="modal-backdrop" onClick={() => setIsHotkeyModalOpen(false)}>
+          <div className="modal-card" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header">
+              <h2>Configure Hotkeys</h2>
+              <button className="modal-close-btn" onClick={() => setIsHotkeyModalOpen(false)}>
+                ✕
+              </button>
+            </div>
+
+            <div className="modal-body">
+              <div className="hotkey-notice-bar">
+                <span>{recordingActionId ? "Listening for keypress..." : hotkeyNotice}</span>
+                <button className="btn-mini" onClick={resetHotkeys}>
+                  Restore Defaults
+                </button>
+              </div>
+
+              {Object.keys(actionsByCategory).map((category) => {
+                const actions = actionsByCategory[category];
+                return (
+                  <div key={category} className="hotkey-category-section">
+                    <h3>{category}</h3>
+                    <div className="hotkey-grid">
+                      {actions.map((action) => {
+                        const isRecording = recordingActionId === action.id;
+                        const assignedKey = comboToLabel(hotkeys[action.id]);
+
+                        return (
+                          <div key={action.id} className="hotkey-row-card">
+                            <span>{action.label}</span>
+                            <div className="actions">
+                              <span className="kbd-badge">{isRecording ? "Press key..." : assignedKey || "None"}</span>
+                              <button
+                                className={`btn-rebind ${isRecording ? "recording" : ""}`}
+                                onClick={() => {
+                                  setRecordingActionId(action.id);
+                                  setHotkeyNotice(
+                                    `Press any key combo for "${action.label}". (Space is reserved for Horn)`
+                                  );
+                                }}
+                              >
+                                {isRecording ? "Stop" : "Change"}
+                              </button>
+                              {assignedKey && (
+                                <button className="btn-mini" onClick={() => clearHotkey(action.id)}>
+                                  ✕
+                                </button>
+                              )}
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
   );
 }
 
