@@ -516,7 +516,7 @@ function App() {
     [updateTeam]
   );
 
-  // Player Stats Operations directly on the white sheet
+  // Player Stats Operations directly on the white scorekeeper sheet
   const adjustPlayerStat = useCallback(
     (side: TeamSide, playerId: string, statKey: keyof Omit<Player, "id" | "number" | "name">, amount: number) => {
       updateTeam(side, (team) => {
@@ -937,7 +937,6 @@ function App() {
 
   const renderTeamCard = (side: TeamSide, team: Team) => {
     const isHome = side === "home";
-    const prefix = isHome ? "home" : "away";
     const currNum = isHome ? homeNewNum : awayNewNum;
     const currName = isHome ? homeNewName : awayNewName;
 
@@ -957,49 +956,6 @@ function App() {
 
         <div className="score-box">
           <span className="score-number">{team.score}</span>
-        </div>
-
-        <div className="score-actions-grid">
-          <button
-            className="btn-score"
-            onClick={() => adjustScore(side, 1)}
-            title={`+1 Point (${comboToLabel(hotkeys[`${prefix}ScorePlus1` as ActionId])})`}
-          >
-            +1
-            {hotkeys[`${prefix}ScorePlus1` as ActionId] && (
-              <span className="kbd-badge">{comboToLabel(hotkeys[`${prefix}ScorePlus1` as ActionId])}</span>
-            )}
-          </button>
-          <button
-            className="btn-score"
-            onClick={() => adjustScore(side, 2)}
-            title={`+2 Points (${comboToLabel(hotkeys[`${prefix}ScorePlus2` as ActionId])})`}
-          >
-            +2
-            {hotkeys[`${prefix}ScorePlus2` as ActionId] && (
-              <span className="kbd-badge">{comboToLabel(hotkeys[`${prefix}ScorePlus2` as ActionId])}</span>
-            )}
-          </button>
-          <button
-            className="btn-score"
-            onClick={() => adjustScore(side, 3)}
-            title={`+3 Points (${comboToLabel(hotkeys[`${prefix}ScorePlus3` as ActionId])})`}
-          >
-            +3
-            {hotkeys[`${prefix}ScorePlus3` as ActionId] && (
-              <span className="kbd-badge">{comboToLabel(hotkeys[`${prefix}ScorePlus3` as ActionId])}</span>
-            )}
-          </button>
-          <button
-            className="btn-score minus"
-            onClick={() => adjustScore(side, -1)}
-            title={`-1 Point (${comboToLabel(hotkeys[`${prefix}ScoreMinus1` as ActionId])})`}
-          >
-            -1
-            {hotkeys[`${prefix}ScoreMinus1` as ActionId] && (
-              <span className="kbd-badge">{comboToLabel(hotkeys[`${prefix}ScoreMinus1` as ActionId])}</span>
-            )}
-          </button>
         </div>
 
         <div className="team-stats-row">
@@ -1049,17 +1005,17 @@ function App() {
             </button>
           </div>
 
-          {/* Paper Table */}
+          {/* Paper Table with Minus (-) and Plus (+) for Points, Fouls, Rebounds, and Assists */}
           <table className="paper-table">
             <thead>
               <tr>
-                <th style={{ width: "8%" }}>#</th>
+                <th style={{ width: "6%" }}>#</th>
                 <th className="left">PLAYER</th>
-                <th style={{ width: "12%" }}>PTS</th>
-                <th style={{ width: "10%" }}>F</th>
-                <th style={{ width: "8%" }}>R</th>
-                <th style={{ width: "8%" }}>A</th>
-                <th style={{ width: "38%" }}>QUICK STAT CONTROL</th>
+                <th style={{ width: "28%" }}>POINTS (PTS)</th>
+                <th style={{ width: "18%" }}>FOULS (F)</th>
+                <th style={{ width: "16%" }}>REB (R)</th>
+                <th style={{ width: "16%" }}>AST (A)</th>
+                <th style={{ width: "6%" }}></th>
               </tr>
             </thead>
             <tbody>
@@ -1073,37 +1029,55 @@ function App() {
                       {player.fouls === 4 && <span className="paper-foul-warn">4F</span>}
                     </div>
                   </td>
-                  <td className="paper-stat-badge">{player.pts}</td>
-                  <td className="paper-stat-badge" style={{ color: player.fouls >= 5 ? "#dc2626" : "#0f172a" }}>
-                    {player.fouls}
-                  </td>
-                  <td style={{ color: "#64748b" }}>{player.reb}</td>
-                  <td style={{ color: "#64748b" }}>{player.ast}</td>
 
-                  {/* Inline Committee Quick Controls */}
+                  {/* PTS Controls: -1, +1, +2, +3 */}
                   <td>
-                    <div className="paper-btn-group">
+                    <div className="paper-stat-cell-wrap">
+                      <button
+                        className="btn-paper-act sub"
+                        onClick={() => adjustPlayerStat(side, player.id, "pts", -1)}
+                        title="-1 Point"
+                      >
+                        -1
+                      </button>
+                      <span className="paper-stat-badge">{player.pts}</span>
                       <button
                         className="btn-paper-act pt1"
                         onClick={() => adjustPlayerStat(side, player.id, "pts", 1)}
-                        title="+1 Pt"
+                        title="+1 Point"
                       >
                         +1
                       </button>
                       <button
                         className="btn-paper-act pt2"
                         onClick={() => adjustPlayerStat(side, player.id, "pts", 2)}
-                        title="+2 Pts"
+                        title="+2 Points"
                       >
                         +2
                       </button>
                       <button
                         className="btn-paper-act pt3"
                         onClick={() => adjustPlayerStat(side, player.id, "pts", 3)}
-                        title="+3 Pts"
+                        title="+3 Points"
                       >
                         +3
                       </button>
+                    </div>
+                  </td>
+
+                  {/* FOULS Controls: -F, +F */}
+                  <td>
+                    <div className="paper-stat-cell-wrap">
+                      <button
+                        className="btn-paper-act sub"
+                        onClick={() => adjustPlayerStat(side, player.id, "fouls", -1)}
+                        title="-1 Foul"
+                      >
+                        -
+                      </button>
+                      <span className="paper-stat-badge" style={{ color: player.fouls >= 5 ? "#dc2626" : "#0f172a" }}>
+                        {player.fouls}
+                      </span>
                       <button
                         className="btn-paper-act foul"
                         onClick={() => adjustPlayerStat(side, player.id, "fouls", 1)}
@@ -1111,14 +1085,64 @@ function App() {
                       >
                         +F
                       </button>
+                    </div>
+                  </td>
+
+                  {/* REBOUNDS Controls: -R, +R */}
+                  <td>
+                    <div className="paper-stat-cell-wrap">
                       <button
-                        className="btn-paper-act del"
-                        onClick={() => handleDeletePlayer(side, player.id)}
-                        title="Remove"
+                        className="btn-paper-act sub"
+                        onClick={() => adjustPlayerStat(side, player.id, "reb", -1)}
+                        title="-1 Rebound"
                       >
-                        ✕
+                        -
+                      </button>
+                      <span className="paper-stat-badge" style={{ color: "#475569" }}>
+                        {player.reb}
+                      </span>
+                      <button
+                        className="btn-paper-act stat"
+                        onClick={() => adjustPlayerStat(side, player.id, "reb", 1)}
+                        title="+1 Rebound"
+                      >
+                        +
                       </button>
                     </div>
+                  </td>
+
+                  {/* ASSISTS Controls: -A, +A */}
+                  <td>
+                    <div className="paper-stat-cell-wrap">
+                      <button
+                        className="btn-paper-act sub"
+                        onClick={() => adjustPlayerStat(side, player.id, "ast", -1)}
+                        title="-1 Assist"
+                      >
+                        -
+                      </button>
+                      <span className="paper-stat-badge" style={{ color: "#475569" }}>
+                        {player.ast}
+                      </span>
+                      <button
+                        className="btn-paper-act stat"
+                        onClick={() => adjustPlayerStat(side, player.id, "ast", 1)}
+                        title="+1 Assist"
+                      >
+                        +
+                      </button>
+                    </div>
+                  </td>
+
+                  {/* Delete Player */}
+                  <td>
+                    <button
+                      className="btn-paper-act del"
+                      onClick={() => handleDeletePlayer(side, player.id)}
+                      title="Remove Player"
+                    >
+                      ✕
+                    </button>
                   </td>
                 </tr>
               ))}
