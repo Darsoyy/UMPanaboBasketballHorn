@@ -1323,7 +1323,7 @@ function App() {
     // NBA Broadcast Score Animation Computation
     const animState = isHome ? homeScoreAnim : awayScoreAnim;
     const animClass = animState ? `anim-plus${animState.type.slice(1)}` : "";
-    const popLabel = animState?.type === "+3" ? "💥 THREE POINTER MADE! (+3)" : animState?.type === "+2" ? "🏀 FIELD GOAL MADE! (+2)" : "🎯 FREE THROW MADE! (+1)";
+    const popLabel = animState ? animState.type : "";
     const popClass = animState ? `pop-${animState.type.slice(1)}` : "";
     const waveClass = isHome ? "home-wave" : "away-wave";
     const pulseClass = isHome ? (homePulse ? "pulse-home" : "") : (awayPulse ? "pulse-away" : "");
