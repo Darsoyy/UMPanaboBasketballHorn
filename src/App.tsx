@@ -56,6 +56,11 @@ type ActionId = ActionDefinition["id"];
 type HotkeyMap = Partial<Record<ActionId, string>>;
 type TeamSide = "home" | "away";
 
+type ScoreAnimState = {
+  type: "+1" | "+2" | "+3";
+  id: number;
+} | null;
+
 type Player = {
   id: string;
   number: string;
@@ -196,6 +201,19 @@ const formatTimeRemaining = (ms: number): string => {
   return `${remainingHours}h ${minutes}m remaining`;
 };
 
+const isTypingTarget = (target: EventTarget | null) => {
+  if (!(target instanceof HTMLElement)) return false;
+
+  const tagName = target.tagName.toLowerCase();
+
+  return (
+    tagName === "input" ||
+    tagName === "textarea" ||
+    tagName === "select" ||
+    target.isContentEditable
+  );
+};
+
 const formatCode16 = (raw: string): string => {
   const clean = raw.replace(/[^A-Z0-9]/gi, "").toUpperCase().slice(0, 16);
   const parts = clean.match(/.{1,4}/g) || [];
@@ -263,7 +281,6 @@ const loadStoredMatchHistory = (): MatchRecord[] => {
   }
 };
 
-// Generate an official 16-character 3-day access key
 const generate16CharKey = (): string => {
   const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
   let key = "";
@@ -317,19 +334,6 @@ const comboToLabel = (combo?: string | null) => {
     .join("+");
 };
 
-const isTypingTarget = (target: EventTarget | null) => {
-  if (!(target instanceof HTMLElement)) return false;
-
-  const tagName = target.tagName.toLowerCase();
-
-  return (
-    tagName === "input" ||
-    tagName === "textarea" ||
-    tagName === "select" ||
-    target.isContentEditable
-  );
-};
-
 const readComboFromEvent = (event: KeyboardEvent): KeyCombo | null => {
   const modifierOnlyCodes = new Set([
     "ShiftLeft",
@@ -362,7 +366,7 @@ const readComboFromEvent = (event: KeyboardEvent): KeyCombo | null => {
 };
 
 function App() {
-  // License & Expiration State
+  // License State
   const [license, setLicense] = useState<LicenseRecord | null>(() => loadStoredLicense());
   const [usedCodes, setUsedCodes] = useState<string[]>(() => loadStoredUsedCodes());
   const [codeInputValue, setCodeInputValue] = useState("");
@@ -371,13 +375,11 @@ function App() {
   const [adminPassInput, setAdminPassInput] = useState("");
   const [generatedKey, setGeneratedKey] = useState("");
 
-  // Check if current 3-day license is valid
   const isLicenseActive = useMemo(() => {
     if (!license) return false;
     return Date.now() < license.expiresAt;
   }, [license]);
 
-  // Restore live scoreboard state from Local Storage if available!
   const savedState = useMemo(() => loadStoredLiveState(), []);
 
   const [home, setHome] = useState<Team>(() => savedState?.home || createTeam("HOME", "home"));
@@ -387,6 +389,10 @@ function App() {
   const [shotSeconds, setShotSeconds] = useState<number>(() => savedState?.shotSeconds ?? DEFAULT_SHOT_SECONDS);
   const [isRunning, setIsRunning] = useState(false);
   const [isRunningTimeMode, setIsRunningTimeMode] = useState<boolean>(() => savedState?.isRunningTimeMode || false);
+
+  // NBA Broadcast Score Animation States
+  const [homeScoreAnim, setHomeScoreAnim] = useState<ScoreAnimState>(null);
+  const [awayScoreAnim, setAwayScoreAnim] = useState<ScoreAnimState>(null);
 
   // Saved Games & Match History State
   const [matchHistory, setMatchHistory] = useState<MatchRecord[]>(() => loadStoredMatchHistory());
@@ -419,7 +425,21 @@ function App() {
   const hasPlayedGameEndHornRef = useRef(false);
   const hasPlayedShotEndHornRef = useRef(false);
 
-  // Auto-save live state to LocalStorage whenever key match data updates
+  // Helper to trigger NBA-style score pop animation
+  const triggerScoreAnim = useCallback((side: TeamSide, amount: number) => {
+    if (amount <= 0 || amount > 3) return;
+
+    const animType = `+${amount}` as "+1" | "+2" | "+3";
+    const animObj = { type: animType, id: Date.now() };
+
+    if (side === "home") {
+      setHomeScoreAnim(animObj);
+    } else {
+      setAwayScoreAnim(animObj);
+    }
+  }, []);
+
+  // Auto-save live state
   useEffect(() => {
     const liveState: LiveState = {
       home,
@@ -432,17 +452,16 @@ function App() {
     window.localStorage.setItem(LIVE_STATE_STORAGE_KEY, JSON.stringify(liveState));
   }, [away, gameSeconds, home, isRunningTimeMode, quarter, shotSeconds]);
 
-  // Save match history to LocalStorage
+  // Save match history
   useEffect(() => {
     window.localStorage.setItem(MATCH_HISTORY_STORAGE_KEY, JSON.stringify(matchHistory));
   }, [matchHistory]);
 
-  // Save used codes to LocalStorage
+  // Save used codes
   useEffect(() => {
     window.localStorage.setItem(USED_CODES_STORAGE_KEY, JSON.stringify(usedCodes));
   }, [usedCodes]);
 
-  // Handle 16-character access code activation
   const handleActivateCode = () => {
     const cleanCode = codeInputValue.replace(/[^A-Z0-9]/gi, "").toUpperCase();
 
@@ -456,7 +475,6 @@ function App() {
       return;
     }
 
-    // Activate 3-day access pass!
     const now = Date.now();
     const newLicense: LicenseRecord = {
       code: formatCode16(cleanCode),
@@ -741,9 +759,10 @@ function App() {
         ...team,
         score: Math.max(0, team.score + amount),
       }));
+      if (amount > 0) triggerScoreAnim(side, amount);
       checkRunningTimeResume();
     },
-    [checkRunningTimeResume, updateTeam]
+    [checkRunningTimeResume, triggerScoreAnim, updateTeam]
   );
 
   const adjustFouls = useCallback(
@@ -780,7 +799,10 @@ function App() {
           const newVal = Math.max(0, currentVal + amount);
           const diff = newVal - currentVal;
 
-          if (statKey === "pts") scoreDiff = diff;
+          if (statKey === "pts") {
+            scoreDiff = diff;
+            if (diff > 0) triggerScoreAnim(side, diff);
+          }
           if (statKey === "fouls") foulsDiff = diff;
 
           return { ...player, [statKey]: newVal };
@@ -798,7 +820,7 @@ function App() {
         checkRunningTimeResume();
       }
     },
-    [checkRunningTimeResume, updateTeam]
+    [checkRunningTimeResume, triggerScoreAnim, updateTeam]
   );
 
   const handleAddPlayerInline = useCallback(
@@ -1192,6 +1214,12 @@ function App() {
     const currNum = isHome ? homeNewNum : awayNewNum;
     const currName = isHome ? homeNewName : awayNewName;
 
+    // NBA Broadcast Score Animation Computation
+    const animState = isHome ? homeScoreAnim : awayScoreAnim;
+    const animClass = animState ? `anim-plus${animState.type.slice(1)}` : "";
+    const popLabel = animState?.type === "+3" ? "🔥 +3 THREE-POINTER!" : animState?.type === "+2" ? "+2 PTS" : "+1";
+    const popClass = animState ? `pop-${animState.type.slice(1)}` : "";
+
     return (
       <section className={`team-card ${isHome ? "home" : "away"}`}>
         <div className="team-header-row">
@@ -1206,8 +1234,14 @@ function App() {
           onChange={(event) => setTeamName(side, event.target.value)}
         />
 
+        {/* Score Box with NBA Broadcast Floating Pop Animation */}
         <div className="score-box">
-          <span className="score-number">{team.score}</span>
+          {animState && (
+            <div key={animState.id} className={`nba-score-pop ${popClass}`}>
+              {popLabel}
+            </div>
+          )}
+          <span className={`score-number ${animClass}`}>{team.score}</span>
         </div>
 
         <div className="team-stats-row">
@@ -1412,7 +1446,7 @@ function App() {
     );
   };
 
-  // If 3-Day License is Expired or Not Activated, render the Activation / Purchase Screen!
+  // If 3-Day License is Expired or Not Activated, render Activation Screen!
   if (!isLicenseActive) {
     return (
       <div className="login-gate-overlay">
