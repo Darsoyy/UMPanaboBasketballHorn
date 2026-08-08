@@ -11,7 +11,7 @@ const LICENSE_STORAGE_KEY = "basketball-scoreboard-license-v2";
 const USED_CODES_STORAGE_KEY = "basketball-scoreboard-used-codes-v2";
 
 const THREE_DAYS_MS = 3 * 24 * 60 * 60 * 1000; // 3 days in milliseconds
-const ADMIN_MASTER_PASSWORD = "ADMIN2026KEYPASS";
+const ADMIN_MASTER_PASSWORD = "Dar1031win";
 
 const RESERVED_HORN_HOTKEY = "Space";
 
