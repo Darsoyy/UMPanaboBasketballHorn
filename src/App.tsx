@@ -1439,24 +1439,10 @@ function App() {
             ACTIVATE 3-DAY PASS
           </button>
 
-          {/* Contact Administrator Card */}
+          {/* Notification Card */}
           <div className="admin-contact-box">
-            <div className="admin-contact-header">
-              <span>💬 Buy / Request Code from Administrator:</span>
-            </div>
-            <div className="admin-contact-list">
-              <div className="admin-contact-item">
-                <span>Admin Office:</span>
-                <strong>UM Panabo Arena Sports Committee</strong>
-              </div>
-              <div className="admin-contact-item">
-                <span>GCash / Mobile:</span>
-                <strong>0917-888-9999</strong>
-              </div>
-              <div className="admin-contact-item">
-                <span>Price / Duration:</span>
-                <strong style={{ color: "#f59e0b" }}>3-Day Unlimited Tournament Pass</strong>
-              </div>
+            <div className="admin-contact-header" style={{ justifyContent: "center", textAlign: "center", padding: "0.2rem 0" }}>
+              <span>📢 Please request or buy an Access Code from the Administrator.</span>
             </div>
 
             <div style={{ marginTop: "0.6rem", textAlign: "center" }}>
