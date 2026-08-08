@@ -3,7 +3,14 @@ import { type ReactNode, useCallback, useEffect, useMemo, useRef, useState } fro
 const DEFAULT_GAME_SECONDS = 8 * 60; // 8 minutes default
 const DEFAULT_SHOT_SECONDS = 24;
 const DEFAULT_TIMEOUTS = 5;
+
 const HOTKEY_STORAGE_KEY = "basketball-scoreboard-hotkeys-v5";
+const LIVE_STATE_STORAGE_KEY = "basketball-scoreboard-live-state-v1";
+const MATCH_HISTORY_STORAGE_KEY = "basketball-scoreboard-match-history-v1";
+const ACCESS_CODE_STORAGE_KEY = "basketball-scoreboard-access-code-v1";
+const AUTH_SESSION_STORAGE_KEY = "basketball-scoreboard-auth-session-v1";
+
+const DEFAULT_ACCESS_CODE = "1234";
 const RESERVED_HORN_HOTKEY = "Space";
 
 const ACTION_DEFINITIONS = [
@@ -65,6 +72,29 @@ type Team = {
   fouls: number;
   timeouts: number;
   players: Player[];
+};
+
+type MatchRecord = {
+  id: string;
+  date: string;
+  homeName: string;
+  homeScore: number;
+  homeFouls: number;
+  homePlayers: Player[];
+  awayName: string;
+  awayScore: number;
+  awayFouls: number;
+  awayPlayers: Player[];
+  quarter: number;
+};
+
+type LiveState = {
+  home: Team;
+  away: Team;
+  quarter: number;
+  gameSeconds: number;
+  shotSeconds: number;
+  isRunningTimeMode: boolean;
 };
 
 type KeyCombo = {
@@ -248,18 +278,81 @@ const loadStoredHotkeys = (): HotkeyMap => {
   }
 };
 
-function App() {
-  const [home, setHome] = useState<Team>(() => createTeam("HOME", "home"));
-  const [away, setAway] = useState<Team>(() => createTeam("AWAY", "away"));
-  const [quarter, setQuarter] = useState(1);
-  const [gameSeconds, setGameSeconds] = useState(DEFAULT_GAME_SECONDS);
-  const [shotSeconds, setShotSeconds] = useState(DEFAULT_SHOT_SECONDS);
-  const [isRunning, setIsRunning] = useState(false);
-  const [isRunningTimeMode, setIsRunningTimeMode] = useState(false);
+const loadStoredLiveState = (): LiveState | null => {
+  if (typeof window === "undefined") return null;
 
-  // Modals & Popovers
+  try {
+    const saved = window.localStorage.getItem(LIVE_STATE_STORAGE_KEY);
+    if (!saved) return null;
+    return JSON.parse(saved) as LiveState;
+  } catch {
+    return null;
+  }
+};
+
+const loadStoredMatchHistory = (): MatchRecord[] => {
+  if (typeof window === "undefined") return [];
+
+  try {
+    const saved = window.localStorage.getItem(MATCH_HISTORY_STORAGE_KEY);
+    if (!saved) return [];
+    return JSON.parse(saved) as MatchRecord[];
+  } catch {
+    return [];
+  }
+};
+
+const loadStoredAccessCode = (): string => {
+  if (typeof window === "undefined") return DEFAULT_ACCESS_CODE;
+
+  try {
+    const saved = window.localStorage.getItem(ACCESS_CODE_STORAGE_KEY);
+    return saved || DEFAULT_ACCESS_CODE;
+  } catch {
+    return DEFAULT_ACCESS_CODE;
+  }
+};
+
+const checkAuthSession = (): boolean => {
+  if (typeof window === "undefined") return false;
+
+  try {
+    return window.sessionStorage.getItem(AUTH_SESSION_STORAGE_KEY) === "true";
+  } catch {
+    return false;
+  }
+};
+
+function App() {
+  // Authentication State
+  const [isAuthenticated, setIsAuthenticated] = useState<boolean>(() => checkAuthSession());
+  const [accessCode, setAccessCode] = useState<string>(() => loadStoredAccessCode());
+  const [pinInput, setPinInput] = useState("");
+  const [loginError, setLoginError] = useState(false);
+
+  // Restore live scoreboard state from Local Storage if available!
+  const savedState = useMemo(() => loadStoredLiveState(), []);
+
+  const [home, setHome] = useState<Team>(() => savedState?.home || createTeam("HOME", "home"));
+  const [away, setAway] = useState<Team>(() => savedState?.away || createTeam("AWAY", "away"));
+  const [quarter, setQuarter] = useState<number>(() => savedState?.quarter || 1);
+  const [gameSeconds, setGameSeconds] = useState<number>(() => savedState?.gameSeconds ?? DEFAULT_GAME_SECONDS);
+  const [shotSeconds, setShotSeconds] = useState<number>(() => savedState?.shotSeconds ?? DEFAULT_SHOT_SECONDS);
+  const [isRunning, setIsRunning] = useState(false);
+  const [isRunningTimeMode, setIsRunningTimeMode] = useState<boolean>(() => savedState?.isRunningTimeMode || false);
+
+  // Saved Games & Match History State
+  const [matchHistory, setMatchHistory] = useState<MatchRecord[]>(() => loadStoredMatchHistory());
+  const [selectedHistoryStats, setSelectedHistoryStats] = useState<MatchRecord | null>(null);
+
+  // Modals
   const [isTimeModalOpen, setIsTimeModalOpen] = useState(false);
   const [isHotkeyModalOpen, setIsHotkeyModalOpen] = useState(false);
+  const [isHistoryModalOpen, setIsHistoryModalOpen] = useState(false);
+  const [isSecurityModalOpen, setIsSecurityModalOpen] = useState(false);
+
+  const [newAccessCodeInput, setNewAccessCodeInput] = useState("");
+  const [securityNotice, setSecurityNotice] = useState("");
 
   // Per-Team Add Player Form Inputs
   const [homeNewNum, setHomeNewNum] = useState("");
@@ -281,6 +374,124 @@ function App() {
   const spacePressedRef = useRef(false);
   const hasPlayedGameEndHornRef = useRef(false);
   const hasPlayedShotEndHornRef = useRef(false);
+
+  // Auto-save live state to LocalStorage whenever key match data updates
+  useEffect(() => {
+    const liveState: LiveState = {
+      home,
+      away,
+      quarter,
+      gameSeconds,
+      shotSeconds,
+      isRunningTimeMode,
+    };
+    window.localStorage.setItem(LIVE_STATE_STORAGE_KEY, JSON.stringify(liveState));
+  }, [away, gameSeconds, home, isRunningTimeMode, quarter, shotSeconds]);
+
+  // Save match history to LocalStorage
+  useEffect(() => {
+    window.localStorage.setItem(MATCH_HISTORY_STORAGE_KEY, JSON.stringify(matchHistory));
+  }, [matchHistory]);
+
+  const handleLoginSubmit = (codeToTest?: string) => {
+    const targetCode = codeToTest ?? pinInput;
+    if (targetCode === accessCode) {
+      setIsAuthenticated(true);
+      setLoginError(false);
+      setPinInput("");
+      window.sessionStorage.setItem(AUTH_SESSION_STORAGE_KEY, "true");
+    } else {
+      setLoginError(true);
+      setPinInput("");
+    }
+  };
+
+  const handleLogout = () => {
+    setIsAuthenticated(false);
+    window.sessionStorage.removeItem(AUTH_SESSION_STORAGE_KEY);
+  };
+
+  const handleKeypadPress = (val: string) => {
+    if (val === "CLEAR") {
+      setPinInput("");
+      setLoginError(false);
+      return;
+    }
+
+    if (val === "ENTER") {
+      handleLoginSubmit();
+      return;
+    }
+
+    if (pinInput.length < 8) {
+      setPinInput((prev) => prev + val);
+      setLoginError(false);
+    }
+  };
+
+  const handleChangeAccessCode = () => {
+    if (!newAccessCodeInput.trim() || newAccessCodeInput.trim().length < 4) {
+      setSecurityNotice("Access code must be at least 4 digits.");
+      return;
+    }
+
+    const newCode = newAccessCodeInput.trim();
+    setAccessCode(newCode);
+    window.localStorage.setItem(ACCESS_CODE_STORAGE_KEY, newCode);
+    setNewAccessCodeInput("");
+    setSecurityNotice("✅ Access Code successfully updated!");
+    window.setTimeout(() => setIsSecurityModalOpen(false), 1200);
+  };
+
+  const handleSaveCurrentMatch = () => {
+    const now = new Date();
+    const formattedDate = `${now.toLocaleDateString()} ${now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`;
+
+    const newRecord: MatchRecord = {
+      id: `match-${Date.now()}`,
+      date: formattedDate,
+      homeName: home.name,
+      homeScore: home.score,
+      homeFouls: home.fouls,
+      homePlayers: [...home.players],
+      awayName: away.name,
+      awayScore: away.score,
+      awayFouls: away.fouls,
+      awayPlayers: [...away.players],
+      quarter,
+    };
+
+    setMatchHistory((prev) => [newRecord, ...prev]);
+    alert(`✅ Game Saved! ${home.name} ${home.score} - ${away.score} ${away.name}`);
+  };
+
+  const handleLoadPastMatch = (record: MatchRecord) => {
+    const confirmLoad = window.confirm(`Load past game "${record.homeName} vs ${record.awayName}" onto the scoreboard?`);
+    if (!confirmLoad) return;
+
+    setHome({
+      name: record.homeName,
+      score: record.homeScore,
+      fouls: record.homeFouls,
+      timeouts: DEFAULT_TIMEOUTS,
+      players: record.homePlayers || [],
+    });
+
+    setAway({
+      name: record.awayName,
+      score: record.awayScore,
+      fouls: record.awayFouls,
+      timeouts: DEFAULT_TIMEOUTS,
+      players: record.awayPlayers || [],
+    });
+
+    setQuarter(record.quarter || 4);
+    setIsHistoryModalOpen(false);
+  };
+
+  const handleDeleteHistoryRecord = (id: string) => {
+    setMatchHistory((prev) => prev.filter((rec) => rec.id !== id));
+  };
 
   const createHornGraph = useCallback((): HornGraph | null => {
     if (hornGraphRef.current) return hornGraphRef.current;
@@ -516,7 +727,6 @@ function App() {
     [updateTeam]
   );
 
-  // Player Stats Operations directly on the white scorekeeper sheet
   const adjustPlayerStat = useCallback(
     (side: TeamSide, playerId: string, statKey: keyof Omit<Player, "id" | "number" | "name">, amount: number) => {
       updateTeam(side, (team) => {
@@ -813,6 +1023,8 @@ function App() {
   }, [hotkeys]);
 
   useEffect(() => {
+    if (!isAuthenticated) return;
+
     const handleKeyDown = (event: KeyboardEvent) => {
       if (recordingActionId) {
         const combo = readComboFromEvent(event);
@@ -873,7 +1085,7 @@ function App() {
       window.removeEventListener("keydown", handleKeyDown, true);
       window.removeEventListener("keyup", handleKeyUp, true);
     };
-  }, [assignHotkey, executeAction, hotkeyLookup, recordingActionId, startHorn, stopHorn]);
+  }, [assignHotkey, executeAction, hotkeyLookup, isAuthenticated, recordingActionId, startHorn, stopHorn]);
 
   useEffect(() => {
     if (!isRunning) return;
@@ -1030,7 +1242,7 @@ function App() {
                     </div>
                   </td>
 
-                  {/* PTS Controls: -1, +1, +2, +3 */}
+                  {/* PTS Controls */}
                   <td>
                     <div className="paper-stat-cell-wrap">
                       <button
@@ -1065,7 +1277,7 @@ function App() {
                     </div>
                   </td>
 
-                  {/* FOULS Controls: -F, +F */}
+                  {/* FOULS Controls */}
                   <td>
                     <div className="paper-stat-cell-wrap">
                       <button
@@ -1088,7 +1300,7 @@ function App() {
                     </div>
                   </td>
 
-                  {/* REBOUNDS Controls: -R, +R */}
+                  {/* REBOUNDS Controls */}
                   <td>
                     <div className="paper-stat-cell-wrap">
                       <button
@@ -1111,7 +1323,7 @@ function App() {
                     </div>
                   </td>
 
-                  {/* ASSISTS Controls: -A, +A */}
+                  {/* ASSISTS Controls */}
                   <td>
                     <div className="paper-stat-cell-wrap">
                       <button
@@ -1160,6 +1372,44 @@ function App() {
     );
   };
 
+  // If user is not authenticated, render the Access Code Login Screen!
+  if (!isAuthenticated) {
+    return (
+      <div className="login-gate-overlay">
+        <div className="login-card">
+          <div className="login-brand-logo">UM</div>
+          <h2>Panabo Scoreboard</h2>
+          <p>Enter Official Access Code to Unlock Desk</p>
+
+          {loginError && <div className="login-error-alert">⚠️ Incorrect Access Code. Try again!</div>}
+
+          <div className="pin-display-box">{pinInput ? "•".repeat(pinInput.length) : "ENTER PIN"}</div>
+
+          <div className="pin-keypad">
+            {["1", "2", "3", "4", "5", "6", "7", "8", "9"].map((num) => (
+              <button key={num} className="pin-btn" onClick={() => handleKeypadPress(num)}>
+                {num}
+              </button>
+            ))}
+            <button className="pin-btn action-btn clear" onClick={() => handleKeypadPress("CLEAR")}>
+              CLR
+            </button>
+            <button className="pin-btn" onClick={() => handleKeypadPress("0")}>
+              0
+            </button>
+            <button className="pin-btn action-btn submit" onClick={() => handleKeypadPress("ENTER")}>
+              GO
+            </button>
+          </div>
+
+          <div className="login-default-hint">
+            Default Access Code: <strong>1234</strong>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="scoreboard-viewport">
       {/* Header Bar */}
@@ -1190,11 +1440,20 @@ function App() {
         </div>
 
         <div className="header-actions">
+          <button className="icon-btn" onClick={() => setIsHistoryModalOpen(true)} title="Match History Archive">
+            📂 History ({matchHistory.length})
+          </button>
           <button className="icon-btn" onClick={() => setIsTimeModalOpen(true)} title="Set Custom Time">
             ⏱️ Time
           </button>
           <button className="icon-btn" onClick={() => setIsHotkeyModalOpen(true)} title="Custom Hotkeys">
             ⌨️ Hotkeys
+          </button>
+          <button className="icon-btn" onClick={() => setIsSecurityModalOpen(true)} title="Security Settings">
+            🔑 Security
+          </button>
+          <button className="icon-btn lock-btn" onClick={handleLogout} title="Lock Desk (Logout)">
+            🔒 Lock
           </button>
           <button className="icon-btn" onClick={toggleFullscreen} title="Toggle Fullscreen">
             ⛶ Screen
@@ -1231,7 +1490,7 @@ function App() {
             </div>
           </div>
 
-          {/* Main Game Clock Card */}
+          {/* Main Game Clock Box */}
           <div className="main-clock-box">
             <div className="clock-header-row">
               <span className="clock-label">GAME CLOCK</span>
@@ -1311,8 +1570,11 @@ function App() {
           <kbd>SPACE</kbd>
         </button>
 
-        {/* Quick Actions */}
+        {/* Save Game & History Quick Actions */}
         <div className="quick-actions-bar">
+          <button className="btn-desk-action save" onClick={handleSaveCurrentMatch} title="Save current match to history">
+            💾 Save Match
+          </button>
           <button className="btn-desk-action" onClick={() => setShotSeconds(DEFAULT_SHOT_SECONDS)}>
             Reset Shot
             {hotkeys.resetShotClock && <span className="kbd-badge">{comboToLabel(hotkeys.resetShotClock)}</span>}
@@ -1333,6 +1595,193 @@ function App() {
           </button>
         </div>
       </footer>
+
+      {/* Modal: Saved Games & Match History Archive */}
+      {isHistoryModalOpen && (
+        <div className="modal-backdrop" onClick={() => setIsHistoryModalOpen(false)}>
+          <div className="modal-card" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header">
+              <h2>📂 Saved Games & Match History ({matchHistory.length})</h2>
+              <button className="modal-close-btn" onClick={() => setIsHistoryModalOpen(false)}>
+                ✕
+              </button>
+            </div>
+
+            <div className="modal-body">
+              {matchHistory.length === 0 ? (
+                <div style={{ textAlign: "center", color: "#64748b", padding: "2rem 0" }}>
+                  No saved games found. Click <strong>"💾 Save Match"</strong> on the desk to store game records!
+                </div>
+              ) : (
+                <div className="history-match-list">
+                  {matchHistory.map((rec) => {
+                    const isHomeWinner = rec.homeScore > rec.awayScore;
+                    const isTie = rec.homeScore === rec.awayScore;
+                    const winnerText = isTie ? "TIE" : isHomeWinner ? `${rec.homeName} WIN` : `${rec.awayName} WIN`;
+
+                    return (
+                      <div key={rec.id} className="history-match-card">
+                        <div className="history-card-header">
+                          <span className="history-date">📅 {rec.date}</span>
+                          <span className="history-winner-tag">🏆 {winnerText}</span>
+                        </div>
+
+                        <div className="history-scores-row">
+                          <div className="history-team-badge">
+                            <span className="history-team-name">{rec.homeName}</span>
+                            <span className="history-team-score">{rec.homeScore}</span>
+                          </div>
+
+                          <span className="history-vs-divider">VS</span>
+
+                          <div className="history-team-badge">
+                            <span className="history-team-name">{rec.awayName}</span>
+                            <span className="history-team-score" style={{ color: "#38bdf8" }}>
+                              {rec.awayScore}
+                            </span>
+                          </div>
+                        </div>
+
+                        <div className="history-actions-row">
+                          <button
+                            className="btn-paper-add"
+                            style={{ background: "#0284c7", borderColor: "#0369a1" }}
+                            onClick={() => setSelectedHistoryStats(selectedHistoryStats?.id === rec.id ? null : rec)}
+                          >
+                            {selectedHistoryStats?.id === rec.id ? "Hide Box Score" : "📋 View Stats Sheet"}
+                          </button>
+                          <button
+                            className="btn-paper-add"
+                            style={{ background: "#d97706", borderColor: "#b45309" }}
+                            onClick={() => handleLoadPastMatch(rec)}
+                          >
+                            🔄 Load to Desk
+                          </button>
+                          <button
+                            className="btn-paper-act del"
+                            style={{ padding: "0.25rem 0.5rem" }}
+                            onClick={() => handleDeleteHistoryRecord(rec.id)}
+                            title="Delete Record"
+                          >
+                            ✕
+                          </button>
+                        </div>
+
+                        {/* Expandable Past Match White Box Score Sheet */}
+                        {selectedHistoryStats?.id === rec.id && (
+                          <div className="paper-score-sheet" style={{ marginTop: "0.5rem" }}>
+                            <div className="paper-sheet-header">
+                              <span className="paper-sheet-title">📝 PAST BOX SCORE: {rec.homeName} vs {rec.awayName}</span>
+                            </div>
+                            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0.5rem" }}>
+                              {/* Home Stats */}
+                              <div>
+                                <h4 style={{ fontSize: "0.75rem", fontWeight: "900", color: "#b45309", marginBottom: "0.25rem" }}>
+                                  {rec.homeName} ({rec.homeScore} PTS)
+                                </h4>
+                                <table className="paper-table">
+                                  <thead>
+                                    <tr>
+                                      <th>#</th>
+                                      <th className="left">PLAYER</th>
+                                      <th>PTS</th>
+                                      <th>F</th>
+                                    </tr>
+                                  </thead>
+                                  <tbody>
+                                    {rec.homePlayers.map((p) => (
+                                      <tr key={p.id}>
+                                        <td className="paper-player-num">#{p.number}</td>
+                                        <td className="left">{p.name}</td>
+                                        <td className="paper-stat-badge">{p.pts}</td>
+                                        <td className="paper-stat-badge">{p.fouls}</td>
+                                      </tr>
+                                    ))}
+                                  </tbody>
+                                </table>
+                              </div>
+
+                              {/* Away Stats */}
+                              <div>
+                                <h4 style={{ fontSize: "0.75rem", fontWeight: "900", color: "#0369a1", marginBottom: "0.25rem" }}>
+                                  {rec.awayName} ({rec.awayScore} PTS)
+                                </h4>
+                                <table className="paper-table">
+                                  <thead>
+                                    <tr>
+                                      <th>#</th>
+                                      <th className="left">PLAYER</th>
+                                      <th>PTS</th>
+                                      <th>F</th>
+                                    </tr>
+                                  </thead>
+                                  <tbody>
+                                    {rec.awayPlayers.map((p) => (
+                                      <tr key={p.id}>
+                                        <td className="paper-player-num">#{p.number}</td>
+                                        <td className="left">{p.name}</td>
+                                        <td className="paper-stat-badge">{p.pts}</td>
+                                        <td className="paper-stat-badge">{p.fouls}</td>
+                                      </tr>
+                                    ))}
+                                  </tbody>
+                                </table>
+                              </div>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal: Security Settings / Change Access Code */}
+      {isSecurityModalOpen && (
+        <div className="modal-backdrop" onClick={() => setIsSecurityModalOpen(false)}>
+          <div className="modal-card" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header">
+              <h2>🔑 Security & Access Code Settings</h2>
+              <button className="modal-close-btn" onClick={() => setIsSecurityModalOpen(false)}>
+                ✕
+              </button>
+            </div>
+
+            <div className="modal-body">
+              {securityNotice && <div className="hotkey-notice-bar">{securityNotice}</div>}
+
+              <div className="time-field" style={{ width: "100%", marginBottom: "1rem" }}>
+                <label>Current Access Code</label>
+                <input
+                  type="text"
+                  disabled
+                  value={accessCode}
+                  style={{ width: "100%", maxWidth: "240px", opacity: 0.7 }}
+                />
+              </div>
+
+              <div className="time-field" style={{ width: "100%", marginBottom: "1rem" }}>
+                <label>Enter New Access Code (PIN)</label>
+                <input
+                  type="password"
+                  placeholder="New PIN (min 4 digits)"
+                  value={newAccessCodeInput}
+                  onChange={(e) => setNewAccessCodeInput(e.target.value)}
+                  style={{ width: "100%", maxWidth: "240px", color: "#38bdf8" }}
+                />
+              </div>
+
+              <button className="horn-btn-huge" style={{ width: "100%" }} onClick={handleChangeAccessCode}>
+                UPDATE ACCESS CODE
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Modal: Custom Time Selector */}
       {isTimeModalOpen && (
