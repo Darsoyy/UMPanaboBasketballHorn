@@ -1217,8 +1217,9 @@ function App() {
     // NBA Broadcast Score Animation Computation
     const animState = isHome ? homeScoreAnim : awayScoreAnim;
     const animClass = animState ? `anim-plus${animState.type.slice(1)}` : "";
-    const popLabel = animState?.type === "+3" ? "🔥 +3 THREE-POINTER!" : animState?.type === "+2" ? "+2 PTS" : "+1";
+    const popLabel = animState?.type === "+3" ? "💥 THREE POINTER MADE! (+3)" : animState?.type === "+2" ? "🏀 FIELD GOAL MADE! (+2)" : "🎯 FREE THROW MADE! (+1)";
     const popClass = animState ? `pop-${animState.type.slice(1)}` : "";
+    const waveClass = isHome ? "home-wave" : "away-wave";
 
     return (
       <section className={`team-card ${isHome ? "home" : "away"}`}>
@@ -1234,12 +1235,15 @@ function App() {
           onChange={(event) => setTeamName(side, event.target.value)}
         />
 
-        {/* Score Box with NBA Broadcast Floating Pop Animation */}
+        {/* Score Box with NBA 2K Broadcast Graphic Banner & Shockwave Ring */}
         <div className="score-box">
           {animState && (
-            <div key={animState.id} className={`nba-score-pop ${popClass}`}>
-              {popLabel}
-            </div>
+            <>
+              <div key={`wave-${animState.id}`} className={`nba-shockwave ${waveClass}`} />
+              <div key={`banner-${animState.id}`} className={`nba-broadcast-banner ${popClass}`}>
+                {popLabel}
+              </div>
+            </>
           )}
           <span className={`score-number ${animClass}`}>{team.score}</span>
         </div>

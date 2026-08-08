@@ -368,80 +368,137 @@ button, input, select {
   box-shadow: 0 0 0 3px var(--away-glow);
 }
 
-/* Score Display Box */
+/* ========================================================= */
+/* NBA 2K BROADCAST GRAPHICS SCORE ANIMATIONS */
+/* ========================================================= */
+
+/* Score Box Base */
 .score-box {
   display: flex;
   align-items: center;
   justify-content: center;
   margin: 0.25rem 0;
   padding: 0.25rem;
-  background: rgba(3, 7, 18, 0.75);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  border-radius: 0.65rem;
-  box-shadow: inset 0 2px 12px rgba(0, 0, 0, 0.6);
+  background: rgba(3, 7, 18, 0.85);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 0.75rem;
+  box-shadow: inset 0 2px 14px rgba(0, 0, 0, 0.75);
   position: relative;
   overflow: visible;
+  perspective: 600px;
 }
 
-/* Floating NBA Score Pop Badges */
-.nba-score-pop {
+/* Expanding Shockwave Ring on Score Box */
+.nba-shockwave {
   position: absolute;
-  top: -1.6rem;
+  inset: -10px;
+  border-radius: 0.9rem;
+  pointer-events: none;
+  z-index: 10;
+}
+
+.nba-shockwave.home-wave {
+  border: 3px solid #f59e0b;
+  box-shadow: 0 0 30px #f59e0b, inset 0 0 20px #f59e0b;
+  animation: shockwaveExpand 900ms cubic-bezier(0.1, 0.8, 0.3, 1) forwards;
+}
+
+.nba-shockwave.away-wave {
+  border: 3px solid #06b6d4;
+  box-shadow: 0 0 30px #06b6d4, inset 0 0 20px #06b6d4;
+  animation: shockwaveExpand 900ms cubic-bezier(0.1, 0.8, 0.3, 1) forwards;
+}
+
+@keyframes shockwaveExpand {
+  0% { opacity: 1; transform: scale(0.9); }
+  60% { opacity: 0.8; transform: scale(1.18); }
+  100% { opacity: 0; transform: scale(1.35); }
+}
+
+/* NBA 2K Broadcast Banner Badge Overlay */
+.nba-broadcast-banner {
+  position: absolute;
+  top: -2.2rem;
   left: 50%;
   transform: translateX(-50%);
-  font-family: var(--font-digital);
-  font-weight: 900;
+  z-index: 120;
   pointer-events: none;
-  z-index: 100;
   white-space: nowrap;
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.35rem 0.85rem;
+  border-radius: 0.45rem;
+  background: #0f172a;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.8), 0 0 20px rgba(245, 158, 11, 0.4);
+  font-family: var(--font-sans);
+  font-weight: 900;
+  font-size: 0.88rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  overflow: hidden;
 }
 
-.nba-score-pop.pop-1 {
-  font-size: 1.35rem;
+/* Light Beam Sweep across NBA Banner */
+.nba-broadcast-banner::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 60%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.6), transparent);
+  transform: skewX(-25deg);
+  animation: beamSweep 1000ms ease forwards;
+}
+
+@keyframes beamSweep {
+  0% { left: -100%; }
+  100% { left: 200%; }
+}
+
+/* Banner Variants (+1 FT, +2 FG, +3 3PT) */
+.nba-broadcast-banner.pop-1 {
+  background: linear-gradient(135deg, #1e293b, #0f172a);
+  border-color: #fef08a;
   color: #fef08a;
-  text-shadow: 0 0 14px rgba(250, 204, 21, 0.9), 0 0 25px rgba(245, 158, 11, 0.8);
-  animation: nbaPopUp1 900ms cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.7), 0 0 20px rgba(254, 240, 138, 0.6);
+  animation: nbaBannerPop 900ms cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
 }
 
-.nba-score-pop.pop-2 {
-  font-size: 1.7rem;
+.nba-broadcast-banner.pop-2 {
+  background: linear-gradient(135deg, #0c4a6e, #0f172a);
+  border-color: #38bdf8;
   color: #38bdf8;
-  text-shadow: 0 0 20px rgba(56, 189, 248, 1), 0 0 35px rgba(6, 182, 212, 0.8);
-  animation: nbaPopUp2 1000ms cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.8), 0 0 30px rgba(56, 189, 248, 0.7);
+  animation: nbaBannerPop 1000ms cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
 }
 
-.nba-score-pop.pop-3 {
-  font-size: 2.1rem;
-  background: linear-gradient(135deg, #ff0055, #f59e0b, #facc15);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  filter: drop-shadow(0 0 16px rgba(245, 158, 11, 1));
-  animation: nbaPopUp3 1250ms cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+.nba-broadcast-banner.pop-3 {
+  background: linear-gradient(135deg, #7c2d12, #451a03, #0f172a);
+  border: 2px solid #f59e0b;
+  color: #facc15;
+  box-shadow: 0 12px 35px rgba(0, 0, 0, 0.9), 0 0 45px rgba(245, 158, 11, 0.9), 0 0 60px rgba(239, 68, 68, 0.7);
+  animation: nbaBannerPop3 1250ms cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
 }
 
-@keyframes nbaPopUp1 {
-  0% { opacity: 0; transform: translate(-50%, 15px) scale(0.6); }
-  25% { opacity: 1; transform: translate(-50%, -8px) scale(1.2); }
-  75% { opacity: 1; transform: translate(-50%, -20px) scale(1); }
-  100% { opacity: 0; transform: translate(-50%, -35px) scale(0.85); }
+@keyframes nbaBannerPop {
+  0% { opacity: 0; transform: translate(-50%, 20px) scale(0.5); }
+  25% { opacity: 1; transform: translate(-50%, -10px) scale(1.15); }
+  75% { opacity: 1; transform: translate(-50%, -22px) scale(1); }
+  100% { opacity: 0; transform: translate(-50%, -40px) scale(0.85); }
 }
 
-@keyframes nbaPopUp2 {
-  0% { opacity: 0; transform: translate(-50%, 18px) scale(0.5); }
-  30% { opacity: 1; transform: translate(-50%, -12px) scale(1.35); }
-  70% { opacity: 1; transform: translate(-50%, -24px) scale(1.05); }
-  100% { opacity: 0; transform: translate(-50%, -42px) scale(0.85); }
+@keyframes nbaBannerPop3 {
+  0% { opacity: 0; transform: translate(-50%, 25px) scale(0.3) rotate(-8deg); }
+  25% { opacity: 1; transform: translate(-50%, -15px) scale(1.35) rotate(4deg); }
+  50% { transform: translate(-50%, -24px) scale(1.2) rotate(-3deg); }
+  75% { opacity: 1; transform: translate(-50%, -34px) scale(1.05) rotate(0deg); }
+  100% { opacity: 0; transform: translate(-50%, -55px) scale(0.8); }
 }
 
-@keyframes nbaPopUp3 {
-  0% { opacity: 0; transform: translate(-50%, 22px) scale(0.4) rotate(-6deg); }
-  25% { opacity: 1; transform: translate(-50%, -15px) scale(1.5) rotate(4deg); }
-  50% { transform: translate(-50%, -22px) scale(1.3) rotate(-3deg); }
-  75% { opacity: 1; transform: translate(-50%, -32px) scale(1.1) rotate(0deg); }
-  100% { opacity: 0; transform: translate(-50%, -52px) scale(0.8); }
-}
-
-/* LED Number Digits Scale & Flash Animations */
+/* LED Number Digits Scale & 3D Flip Animations */
 .score-number {
   font-family: var(--font-digital);
   font-size: clamp(3.2rem, 5.8vw, 5.5rem);
@@ -451,19 +508,41 @@ button, input, select {
   letter-spacing: -0.04em;
   user-select: none;
   display: inline-block;
+  transform-style: preserve-3d;
   transition: transform 150ms ease;
 }
 
 .score-number.anim-plus1 {
-  animation: nbaDigitsFlash1 650ms ease;
+  animation: nbaDigits3DFlip1 650ms ease;
 }
 
 .score-number.anim-plus2 {
-  animation: nbaDigitsFlash2 850ms cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  animation: nbaDigits3DFlip2 850ms cubic-bezier(0.175, 0.885, 0.32, 1.275);
 }
 
 .score-number.anim-plus3 {
-  animation: nbaDigitsFlash3 1150ms cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  animation: nbaDigits3DFlip3 1200ms cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+@keyframes nbaDigits3DFlip1 {
+  0% { transform: scale(1); }
+  35% { transform: scale(1.18); filter: brightness(1.4); }
+  100% { transform: scale(1); }
+}
+
+@keyframes nbaDigits3DFlip2 {
+  0% { transform: rotateX(0deg) scale(1); }
+  40% { transform: rotateX(360deg) scale(1.32); filter: brightness(1.7); text-shadow: 0 0 50px rgba(56, 189, 248, 1); }
+  70% { transform: rotateX(360deg) scale(1.1); }
+  100% { transform: rotateX(360deg) scale(1); }
+}
+
+@keyframes nbaDigits3DFlip3 {
+  0% { transform: rotateX(0deg) scale(1); }
+  25% { transform: rotateX(360deg) scale(1.48) rotateZ(-4deg); filter: brightness(2.5); text-shadow: 0 0 60px rgba(245, 158, 11, 1), 0 0 100px rgba(239, 68, 68, 1); }
+  50% { transform: rotateX(720deg) scale(1.35) rotateZ(3deg); }
+  75% { transform: rotateX(720deg) scale(1.15) rotateZ(-1deg); }
+  100% { transform: rotateX(720deg) scale(1) rotateZ(0deg); }
 }
 
 @keyframes nbaDigitsFlash1 {
